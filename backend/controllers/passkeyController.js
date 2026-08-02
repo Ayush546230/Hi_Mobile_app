@@ -12,7 +12,7 @@ import { generateToken } from '../middleware/auth.js';
 
 const RP_NAME = process.env.WEBAUTHN_RP_NAME || 'Auth Showcase';
 const RP_ID = process.env.WEBAUTHN_RP_ID || 'localhost';
-const ORIGIN = process.env.WEBAUTHN_ORIGIN || 'http://localhost:3000';
+const ORIGIN = process.env.WEBAUTHN_ORIGIN || 'https://video-conferencing-website-one.vercel.app';
 
 // ─── REGISTRATION ──────────────────────────────────────────
 

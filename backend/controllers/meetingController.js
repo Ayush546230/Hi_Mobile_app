@@ -20,7 +20,7 @@ function generateMeetingId() {
 }
 
 function getMeetingLink(roomName) {
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const frontendUrl = process.env.FRONTEND_URL || 'https://video-conferencing-website-one.vercel.app';
   return `${frontendUrl}/meeting/${roomName}`;
 }
 
@@ -70,7 +70,8 @@ export const getMeetings = async (req, res) => {
               { hostJoined: true, status: { $ne: 'completed' } } // If host joined and it's active
             ]
           },
-          { status: { $nin: ['completed', 'cancelled'] } }
+          { status: { $nin: ['completed', 'cancelled'] } },
+          { type: { $ne: 'instant' } } // Exclude instant meetings from upcoming list
         ]
       };
       sortQuery = { startTime: 1 };

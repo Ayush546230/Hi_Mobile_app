@@ -46,7 +46,7 @@ function getMeetingInviteHTML(meeting, senderName) {
       })
     : null;
 
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const frontendUrl = process.env.FRONTEND_URL || 'https://video-conferencing-website-one.vercel.app';
   return `
 <!DOCTYPE html>
 <html>
@@ -97,7 +97,7 @@ function getMeetingReminderHTML(meeting) {
   const notif = meeting.notification || { amount: 30, unit: 'minutes before' };
   const timeText = `${notif.amount} ${notif.unit.replace(' before', '')}`;
 
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const frontendUrl = process.env.FRONTEND_URL || 'https://video-conferencing-website-one.vercel.app';
   return `
 <!DOCTYPE html>
 <html>
@@ -204,7 +204,7 @@ export async function sendMeetingReminder(meeting, recipientEmail) {
 
 // ─── HTML Cancellation Email Template ───────────────────────
 function getMeetingCancellationHTML(meeting, senderName) {
-  const frontendUrl = process.env.FRONTEND_URL || 'http://localhost:3000';
+  const frontendUrl = process.env.FRONTEND_URL || 'https://video-conferencing-website-one.vercel.app';
   return `
 <!DOCTYPE html>
 <html>

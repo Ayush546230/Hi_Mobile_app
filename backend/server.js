@@ -141,6 +141,84 @@ app.get('/api/health', (req, res) => {
   });
 });
 
+// ─── Meeting Deep Link / Landing Redirection ────────────────
+app.get('/meeting/:roomName', (req, res) => {
+  const { roomName } = req.params;
+  res.send(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Join hi Meeting</title>
+      <meta name="viewport" content="width=device-width, initial-scale=1.0">
+      <style>
+        body { 
+          background: #0d0c15; 
+          color: #fff; 
+          font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif; 
+          display: flex; 
+          flex-direction: column; 
+          align-items: center; 
+          justify-content: center; 
+          height: 100vh; 
+          margin: 0; 
+          text-align: center; 
+          padding: 20px; 
+        }
+        .card { 
+          background: #171622; 
+          padding: 35px 25px; 
+          border-radius: 24px; 
+          border: 1px solid #272635; 
+          box-shadow: 0 12px 40px rgba(0,0,0,0.6); 
+          max-width: 360px; 
+          width: 100%;
+        }
+        h1 { 
+          color: #f97316; 
+          font-style: italic; 
+          font-weight: 900; 
+          margin: 0 0 10px; 
+          font-size: 32px;
+        }
+        p { 
+          color: #a0aec0; 
+          font-size: 14px; 
+          line-height: 1.6; 
+          margin: 10px 0;
+        }
+        .code-box { 
+          background: #0d0c15; 
+          border: 1.5px dashed #f97316; 
+          padding: 14px; 
+          border-radius: 12px; 
+          font-weight: 800; 
+          letter-spacing: 1.5px; 
+          color: #f97316; 
+          font-size: 20px; 
+          margin: 20px 0; 
+          text-transform: uppercase;
+        }
+        .footer-text {
+          font-size: 11px;
+          color: #718096;
+          margin-top: 20px;
+        }
+      </style>
+    </head>
+    <body>
+      <div class="card">
+        <h1>hi</h1>
+        <p>You have been invited to join a video meeting.</p>
+        <p style="margin-top: 20px; font-weight: 600; color: #cbd5e0;">Meeting Room Code</p>
+        <div class="code-box">${roomName}</div>
+        <p>Open the <strong>hi Mobile App</strong> and enter this room code to join instantly.</p>
+        <div class="footer-text">Powered by aiRender</div>
+      </div>
+    </body>
+    </html>
+  `);
+});
+
 // ─── Error Handler ─────────────────────────────────────────
 app.use((err, req, res, next) => {
   console.error('Server error:', err);
