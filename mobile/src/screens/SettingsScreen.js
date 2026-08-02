@@ -11,10 +11,15 @@ const poweredByLogo = require('../../assets/powered_by_aiRender.png');
 
 export default function SettingsScreen({ navigate }) {
   const { colors, theme, changeTheme, themes } = useTheme();
-  const { logout, enablePushAuth, disablePushAuth, user } = useAuth();
+  const { logout, enablePushAuth, disablePushAuth, user, updateBackendHost, apiUrl } = useAuth();
   const { userPreferences, updatePreferences, userProfile, updateProfile } = useMeetings();
 
   const [dispName, setDispName] = useState(userProfile?.displayName || '');
+  
+  // Developer/Test Settings (Hidden 5-tap Mode)
+  const [devTapCount, setDevTapCount] = useState(0);
+  const [showDevInput, setShowDevInput] = useState(false);
+  const [tempUrl, setTempUrl] = useState(apiUrl || '');
 
   // Preference States
   const [micDefault, setMicDefault] = useState(userPreferences?.micDefault || false);
@@ -76,6 +81,18 @@ export default function SettingsScreen({ navigate }) {
     }
   };
 
+
+  const handleLogoTap = () => {
+    setDevTapCount(prev => {
+      const next = prev + 1;
+      if (next >= 5) {
+        setShowDevInput(true);
+        setTempUrl(apiUrl);
+        return 0;
+      }
+      return next;
+    });
+  };
 
   const c = colors;
 
@@ -249,10 +266,48 @@ export default function SettingsScreen({ navigate }) {
           <Text style={[styles.signOutText, { color: c.accentRed }]}>Sign Out</Text>
         </TouchableOpacity>
 
+        {/* Hidden Developer Mode URL Settings */}
+        {showDevInput && (
+          <View style={[styles.section, { backgroundColor: c.bgCard, borderColor: c.border, marginTop: 10 }]}>
+            <Text style={[styles.sectionTitle, { color: c.text, borderBottomColor: c.border }]}>🛠️ Backend API Host</Text>
+            <Text style={[styles.fieldLabel, { color: c.textSecondary }]}>Base API URL</Text>
+            <TextInput
+              style={[styles.fieldInput, { color: c.text, borderColor: c.border, backgroundColor: c.bg }]}
+              value={tempUrl}
+              onChangeText={setTempUrl}
+              autoCapitalize="none"
+              placeholder="https://your-localtunnel-link.loca.lt/api"
+              placeholderTextColor={c.textMuted}
+            />
+            <View style={{ flexDirection: 'row', gap: 10 }}>
+              <TouchableOpacity
+                style={[styles.btnPrimary, { backgroundColor: c.primary, flex: 2 }]}
+                onPress={async () => {
+                  try {
+                    await updateBackendHost(tempUrl);
+                    setShowDevInput(false);
+                    Alert.alert('Success', 'API Host updated successfully!');
+                  } catch (e) {
+                    Alert.alert('Error', 'Failed to save host: ' + e.message);
+                  }
+                }}
+              >
+                <Text style={styles.btnPrimaryText}>Save & Update</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.btnPrimary, { backgroundColor: c.bgHover, borderColor: c.border, borderWidth: 1, flex: 1 }]}
+                onPress={() => setShowDevInput(false)}
+              >
+                <Text style={[styles.btnPrimaryText, { color: c.text }]}>Cancel</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
+
         {/* Branding */}
-        <View style={styles.footerBranding}>
+        <TouchableOpacity style={styles.footerBranding} onPress={handleLogoTap} activeOpacity={0.8}>
           <Image source={poweredByLogo} style={styles.footerLogo} resizeMode="contain" />
-        </View>
+        </TouchableOpacity>
 
       </ScrollView>
     </View>
