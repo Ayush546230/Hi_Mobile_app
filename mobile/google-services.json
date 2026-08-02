@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "182707525346",
+    "project_id": "hi-mobile-bcfe5",
+    "storage_bucket": "hi-mobile-bcfe5.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:182707525346:android:d8c4fb1f3a12f70725b0bb",
+        "android_client_info": {
+          "package_name": "com.himobile"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCL3wZpBetHNQt6UbdzkLwDtqthdZN84-U"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

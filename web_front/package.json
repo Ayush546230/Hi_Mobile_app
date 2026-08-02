@@ -1,0 +1,30 @@
+{
+  "name": "auth-showcase-frontend",
+  "version": "1.0.0",
+  "private": true,
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "@jitsi/react-sdk": "^1.4.4",
+    "@simplewebauthn/browser": "^10.0.0",
+    "axios": "^1.7.2",
+    "lucide-react": "^1.18.0",
+    "luxon": "^3.7.2",
+    "qrcode.react": "^4.2.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-router-dom": "^6.23.1",
+    "socket.io-client": "^4.8.3"
+  },
+  "devDependencies": {
+    "@types/luxon": "^3.7.1",
+    "@types/react": "^19.2.17",
+    "@types/react-dom": "^19.2.3",
+    "@vitejs/plugin-react": "^4.3.0",
+    "typescript": "^6.0.3",
+    "vite": "^5.2.12"
+  }
+}
