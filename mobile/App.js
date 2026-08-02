@@ -259,12 +259,72 @@ function MainApp() {
   );
 }
 
+class ErrorBoundary extends React.Component {
+  state = { hasError: false, error: null, showDetails: false };
+  static getDerivedStateFromError(error) {
+    return { hasError: true, error };
+  }
+  componentDidCatch(error, errorInfo) {
+    console.error('ErrorBoundary caught an error:', error, errorInfo);
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <View style={{ flex: 1, backgroundColor: '#0d0c15', alignItems: 'center', justifyContent: 'center', padding: 24 }}>
+          {/* Logo Brand Header */}
+          <Image source={hiLogo} style={{ height: 40, width: 110, marginBottom: 40 }} resizeMode="contain" />
+          
+          {/* User Friendly Icon and Title */}
+          <Text style={{ fontSize: 48, marginBottom: 16 }}>⚠️</Text>
+          <Text style={{ color: '#fff', fontSize: 20, fontWeight: '700', marginBottom: 8, textAlign: 'center' }}>
+            Oops! Something went wrong
+          </Text>
+          <Text style={{ color: '#a0aec0', fontSize: 14, textAlign: 'center', marginBottom: 30, paddingHorizontal: 10, lineHeight: 22 }}>
+            An unexpected error occurred in the application. Please try reloading or restarting the app.
+          </Text>
+
+          {/* Action Button */}
+          <TouchableOpacity 
+            style={{ backgroundColor: '#6C63FF', paddingHorizontal: 28, paddingVertical: 14, borderRadius: 12, width: '100%', maxWidth: 240, alignItems: 'center', shadowColor: '#6C63FF', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.3, shadowRadius: 8, elevation: 5 }}
+            onPress={() => this.setState({ hasError: false, error: null, showDetails: false })}
+          >
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Reload Application</Text>
+          </TouchableOpacity>
+
+          {/* Hidden Technical Details for Developers */}
+          <TouchableOpacity 
+            style={{ marginTop: 40, padding: 8 }} 
+            onPress={() => this.setState(prev => ({ showDetails: !prev.showDetails }))}
+          >
+            <Text style={{ color: '#718096', fontSize: 12, fontWeight: '600', textDecorationLine: 'underline' }}>
+              {this.state.showDetails ? 'Hide technical details' : 'Show technical details'}
+            </Text>
+          </TouchableOpacity>
+
+          {this.state.showDetails && (
+            <View style={{ marginTop: 12, backgroundColor: '#171622', borderWidth: 1, borderColor: '#272635', borderRadius: 12, padding: 12, width: '100%', maxHeight: 150 }}>
+              <ScrollView>
+                <Text style={{ color: '#ef4444', fontFamily: 'monospace', fontSize: 11, lineHeight: 16 }}>
+                  {this.state.error ? this.state.error.toString() : 'No stack trace available.'}
+                </Text>
+              </ScrollView>
+            </View>
+          )}
+        </View>
+      );
+    }
+    return this.props.children;
+  }
+}
+
 export default function App() {
   return (
     <ThemeProvider>
       <AuthProvider>
         <MeetingProvider>
-          <MainApp />
+          <ErrorBoundary>
+            <MainApp />
+          </ErrorBoundary>
         </MeetingProvider>
       </AuthProvider>
     </ThemeProvider>

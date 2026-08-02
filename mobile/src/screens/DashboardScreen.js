@@ -490,13 +490,20 @@ export default function DashboardScreen({ navigate }) {
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
-  const formatDate = (d) => d.toLocaleString('en-US', {
-    month: 'short', day: 'numeric', year: 'numeric',
-    hour: 'numeric', minute: '2-digit', hour12: true,
-  });
+  const formatDate = (d) => {
+    if (!d) return 'Select date';
+    const parsed = new Date(d);
+    if (isNaN(parsed.getTime())) return 'Select date';
+    return parsed.toLocaleString('en-US', {
+      month: 'short', day: 'numeric', year: 'numeric',
+      hour: 'numeric', minute: '2-digit', hour12: true,
+    });
+  };
 
   const formatMeetingDate = (s) => {
+    if (!s) return 'No date';
     const d = new Date(s);
+    if (isNaN(d.getTime())) return 'Invalid date';
     const isToday = new Date().toDateString() === d.toDateString();
     if (isToday) return `Today, ${d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
     return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
