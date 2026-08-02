@@ -1,28 +1,116 @@
 import React, { useState, useMemo } from 'react';
 import {
   StyleSheet, Text, View, TextInput, TouchableOpacity, ScrollView,
-  Modal, ActivityIndicator, Alert, Linking, Clipboard
+  Modal, ActivityIndicator, Alert, Linking, Clipboard, Image
 } from 'react-native';
 import { useAuth } from '../context/AuthContext';
 import { useMeetings } from '../context/MeetingContext';
 import { useTheme } from '../context/ThemeContext';
 import {
   Video, Calendar, Clock, Keyboard, X, Globe, Bell,
-  ChevronDown, ChevronLeft, ChevronRight, Copy, Mail, ExternalLink, Share2
+  ChevronDown, ChevronLeft, ChevronRight, Copy, ExternalLink
 } from 'lucide-react-native';
+import Svg, { Path, Rect, Circle } from 'react-native-svg';
+
+const hiLogo = require('../../assets/Hi_Logo.png');
+const poweredByLogo = require('../../assets/powered_by_aiRender.png');
+
+// ─── Real Logos for Share Platform tiles ──────────────────
+const WhatsAppIcon = () => (
+  <Svg width={32} height={32} viewBox="0 0 24 24">
+    <Path d="M.057 24l1.687-6.163c-1.041-1.804-1.588-3.849-1.587-5.946C.06 5.348 5.397.01 12.008.01c3.202.001 6.212 1.246 8.477 3.513 2.262 2.268 3.507 5.28 3.505 8.484-.004 6.657-5.34 11.997-11.953 11.997-2.005-.001-3.973-.502-5.739-1.456L0 24h.057zm12.012-3.136c1.8 0 3.565-.483 5.101-1.396l.366-.217 3.792.994-.972-3.7-.238-.378a9.88 9.88 0 001.558-5.328c.002-5.46-4.44-9.9-9.91-9.9-2.65 0-5.14 1.03-7.01 2.9a9.78 9.78 0 00-2.89 7.01c-.001 5.46 4.44 9.9 9.91 9.9h.007zm5.495-7.51c-.301-.15-1.78-.88-2.05-.98-.27-.1-.47-.15-.67.15-.2.3-.77.98-.95 1.18-.18.2-.36.22-.66.07a8.33 8.33 0 01-2.45-1.51 9.2 9.2 0 01-1.7-2.11c-.18-.3-.02-.47.13-.62.14-.13.3-.35.45-.53.15-.17.2-.3.3-.5.1-.2.05-.38-.02-.53-.07-.15-.67-1.62-.92-2.22-.25-.6-.52-.52-.72-.53-.18-.01-.4-.01-.62-.01-.22 0-.58.08-.88.4-.3.32-1.15 1.12-1.15 2.73s1.17 3.16 1.33 3.38c.17.22 2.3 3.52 5.58 4.94.78.34 1.39.54 1.86.69.78.25 1.49.21 2.05.13.62-.09 1.78-.73 2.03-1.43.25-.69.25-1.29.17-1.42-.07-.13-.27-.2-.57-.35z" fill="#25D366" />
+  </Svg>
+);
+
+const TelegramIcon = () => (
+  <Svg width={32} height={32} viewBox="0 0 24 24">
+    <Path d="M11.944 0C5.358 0 0 5.357 0 11.94c0 5.3 3.456 9.79 8.243 11.385.114.022.25-.015.342-.089.091-.073.123-.19.088-.3l-.868-3.056c-.032-.113-.008-.236.066-.328 1.954-2.404 3.018-5.385 3.014-8.473-.002-3.415-.815-6.722-2.352-9.563-.032-.059-.092-.097-.16-.097h-.015zm4.64 6.8c-.15 1.58-.8 5.42-1.13 7.19-.14.75-.42 1-.68 1.03-.58.05-1.02-.38-1.58-.75-.88-.58-1.38-.94-2.23-1.5-.99-.65-.35-1.01.22-1.59.15-.15 2.71-2.48 2.76-2.69.05-.21.03-.31-.05-.18-.08.13-1.49.95-4.22 2.79-.4.27-.76.41-1.08.4-.36-.01-1.04-.2-1.55-.37-.63-.2-1.12-.31-1.08-.66.02-.18.27-.36.74-.55 2.92-1.27 4.86-2.11 5.83-2.51 2.78-1.16 3.35-1.36 3.73-1.37.08 0 .27.02.39.12.1.08.13.19.14.27-.01.06.01.24 0 .24z" fill="#0088cc" />
+  </Svg>
+);
+
+const CalendarIcon = () => (
+  <Svg width={32} height={32} viewBox="0 0 24 24">
+    <Rect x="3" y="4" width="18" height="18" rx="2" ry="2" fill="none" stroke="#4285F4" strokeWidth="2" />
+    <Path d="M16 2v4M8 2v4M3 10h18" stroke="#34A853" strokeWidth="2" />
+    <Circle cx="8" cy="14" r="1.5" fill="#FBBC05" />
+    <Circle cx="12" cy="14" r="1.5" fill="#EA4335" />
+    <Circle cx="16" cy="14" r="1.5" fill="#4285F4" />
+    <Circle cx="8" cy="18" r="1.5" fill="#EA4335" />
+    <Circle cx="12" cy="18" r="1.5" fill="#4285F4" />
+    <Circle cx="16" cy="18" r="1.5" fill="#34A853" />
+  </Svg>
+);
+
+const GmailIcon = () => (
+  <Svg width={32} height={32} viewBox="0 0 24 24">
+    <Path d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2z" fill="#E53935" />
+    <Path d="M22 6l-10 7L2 6v12h20V6z" fill="#D54B3E" />
+    <Path d="M22 6L12 13 2 6" fill="none" stroke="#fff" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round" />
+  </Svg>
+);
+
+const QRIcon = () => (
+  <Svg width={32} height={32} viewBox="0 0 24 24" fill="none" stroke="#6C63FF" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <Rect x="3" y="3" width="7" height="7" />
+    <Rect x="14" y="3" width="7" height="7" />
+    <Rect x="3" y="14" width="7" height="7" />
+    <Path d="M14 14h2v2h-2zm2 2h2v2h-2zm2-2h3v2h-3zm0 4h2v2h-2zm-2 2h2v-2h-2zm-2-2h2v2h-2zm0-4h2v2h-2z" />
+  </Svg>
+);
+
+// ─── Timezone Database ──────────────────────────────────────
+const TIMEZONES = [
+  { label: 'India Standard Time', zone: 'Asia/Kolkata' },
+  { label: 'Greenwich Mean Time', zone: 'Africa/Abidjan' },
+  { label: 'Greenwich Mean Time', zone: 'Africa/Accra' },
+  { label: 'East Africa Time', zone: 'Africa/Addis_Ababa' },
+  { label: 'Central European Standard Time', zone: 'Africa/Algiers' },
+  { label: 'East Africa Time', zone: 'Africa/Asmera' },
+  { label: 'Singapore Standard Time', zone: 'Asia/Singapore' },
+  { label: 'Japan Standard Time', zone: 'Asia/Tokyo' },
+  { label: 'Eastern Standard Time', zone: 'America/New_York' },
+  { label: 'Central Standard Time', zone: 'America/Chicago' },
+  { label: 'Mountain Standard Time', zone: 'America/Denver' },
+  { label: 'Pacific Standard Time', zone: 'America/Los_Angeles' },
+  { label: 'Gulf Standard Time', zone: 'Asia/Dubai' },
+  { label: 'Australian Eastern Standard Time', zone: 'Australia/Sydney' },
+  { label: 'British Summer Time', zone: 'Europe/London' },
+  { label: 'Central European Summer Time', zone: 'Europe/Paris' },
+  { label: 'Moscow Standard Time', zone: 'Europe/Moscow' },
+  { label: 'New Zealand Standard Time', zone: 'Pacific/Auckland' },
+  { label: 'Hawaii Standard Time', zone: 'Pacific/Honolulu' },
+  { label: 'Argentina Time', zone: 'America/Argentina/Buenos_Aires' },
+  { label: 'Brazil Time', zone: 'America/Sao_Paulo' },
+  { label: 'China Standard Time', zone: 'Asia/Shanghai' },
+  { label: 'Korea Standard Time', zone: 'Asia/Seoul' },
+  { label: 'South Africa Standard Time', zone: 'Africa/Johannesburg' },
+  { label: 'Turkey Time', zone: 'Europe/Istanbul' },
+  { label: 'Hong Kong Time', zone: 'Asia/Hong_Kong' },
+  { label: 'Israel Standard Time', zone: 'Asia/Jerusalem' },
+  { label: 'Arabian Standard Time', zone: 'Asia/Riyadh' },
+  { label: 'Pacific/Fiji Time', zone: 'Pacific/Fiji' }
+];
 
 // ─── Inline Calendar Picker Component ───────────────────────
 function CalendarPicker({ date, onChange, onClose, colors, theme }) {
   const [viewYear, setViewYear] = useState(date.getFullYear());
   const [viewMonth, setViewMonth] = useState(date.getMonth());
   const [selDay, setSelDay] = useState(date.getDate());
+  
+  // Time selector states
   const [selHour, setSelHour] = useState(date.getHours() % 12 || 12);
   const [selMin, setSelMin] = useState(date.getMinutes());
   const [ampm, setAmpm] = useState(date.getHours() >= 12 ? 'PM' : 'AM');
-  const [showCustomTime, setShowCustomTime] = useState(false);
+  const [customTimeMode, setCustomTimeMode] = useState(false);
+
+  // Dropdown list states for preset selectors
+  const [showHourMenu, setShowHourMenu] = useState(false);
+  const [showMinMenu, setShowMinMenu] = useState(false);
+  const [showAmPmMenu, setShowAmPmMenu] = useState(false);
 
   const MONTHS = ['January','February','March','April','May','June','July','August','September','October','November','December'];
   const bg = theme === 'light' ? '#fff' : '#1e1e2e';
+  const innerBg = theme === 'light' ? '#f3f4f6' : '#27273a';
   const border = colors.border;
   const primary = colors.primary;
   const text = colors.text;
@@ -41,9 +129,10 @@ function CalendarPicker({ date, onChange, onClose, colors, theme }) {
   };
 
   const handleOK = () => {
-    let h = selHour % 12;
+    let h = (parseInt(selHour) || 12) % 12;
     if (ampm === 'PM') h += 12;
-    const d = new Date(viewYear, viewMonth, selDay, h, selMin, 0);
+    const m = parseInt(selMin) || 0;
+    const d = new Date(viewYear, viewMonth, selDay, h, m, 0);
     onChange(d);
     onClose();
   };
@@ -51,9 +140,6 @@ function CalendarPicker({ date, onChange, onClose, colors, theme }) {
   const cells = [];
   for (let i = 0; i < firstDay; i++) cells.push(null);
   for (let d = 1; d <= daysInMonth; d++) cells.push(d);
-
-  const hourOptions = Array.from({ length: 12 }, (_, i) => i + 1);
-  const minuteOptions = [0, 15, 30, 45];
 
   return (
     <View style={{ backgroundColor: bg, borderRadius: 16, borderWidth: 1, borderColor: border, overflow: 'hidden' }}>
@@ -102,81 +188,121 @@ function CalendarPicker({ date, onChange, onClose, colors, theme }) {
 
       {/* Time row */}
       <View style={{ borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: border, paddingHorizontal: 16, paddingVertical: 12 }}>
-        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 12 }}>
           <Clock size={16} color={muted} />
           <Text style={{ color: text, fontWeight: '600' }}>Time</Text>
-          <TouchableOpacity onPress={() => setShowCustomTime(v => !v)} style={{ marginLeft: 'auto' }}>
-            <Text style={{ color: primary, fontSize: 12, fontWeight: '700' }}>Custom time...</Text>
-          </TouchableOpacity>
         </View>
 
-        {!showCustomTime ? (
-          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-            {/* Hour chips */}
-            <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ gap: 6, flexDirection: 'row' }}>
-              {hourOptions.map(h => (
-                <TouchableOpacity
-                  key={h}
-                  style={[{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
-                    selHour === h ? { backgroundColor: primary, borderColor: primary } : { borderColor: border }]}
-                  onPress={() => setSelHour(h)}
-                >
-                  <Text style={{ color: selHour === h ? '#fff' : text, fontSize: 13, fontWeight: selHour === h ? '700' : '400' }}>{h}</Text>
-                </TouchableOpacity>
-              ))}
-            </ScrollView>
-            {/* Minute chips */}
-            <View style={{ flexDirection: 'row', gap: 6, marginTop: 6 }}>
-              {minuteOptions.map(m => (
-                <TouchableOpacity
-                  key={m}
-                  style={[{ paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, borderWidth: 1 },
-                    selMin === m ? { backgroundColor: primary, borderColor: primary } : { borderColor: border }]}
-                  onPress={() => setSelMin(m)}
-                >
-                  <Text style={{ color: selMin === m ? '#fff' : text, fontSize: 13, fontWeight: selMin === m ? '700' : '400' }}>{String(m).padStart(2, '0')}</Text>
-                </TouchableOpacity>
-              ))}
-              {/* AM/PM */}
+        {/* Input area */}
+        {!customTimeMode ? (
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {/* Hour select */}
+            <View style={{ zIndex: 10 }}>
               <TouchableOpacity
-                style={[{ paddingHorizontal: 14, paddingVertical: 6, borderRadius: 20, borderWidth: 1, backgroundColor: primary, borderColor: primary }]}
-                onPress={() => setAmpm(v => v === 'AM' ? 'PM' : 'AM')}
+                style={{ borderWidth: 1, borderColor: border, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: innerBg }}
+                onPress={() => { setShowHourMenu(v => !v); setShowMinMenu(false); setShowAmPmMenu(false); }}
               >
-                <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>{ampm}</Text>
+                <Text style={{ color: text, fontSize: 14, fontWeight: '600' }}>{selHour}</Text>
+                <ChevronDown size={14} color={muted} />
               </TouchableOpacity>
+              {showHourMenu && (
+                <View style={{ position: 'absolute', bottom: 42, left: 0, width: 80, maxHeight: 180, backgroundColor: bg, borderWidth: 1, borderColor: border, borderRadius: 8, overflow: 'hidden' }}>
+                  <ScrollView nestedScrollEnabled>
+                    {Array.from({ length: 12 }, (_, idx) => idx + 1).map(h => (
+                      <TouchableOpacity key={h} style={{ padding: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: border }} onPress={() => { setSelHour(h); setShowHourMenu(false); }}>
+                        <Text style={{ color: text, textAlign: 'center' }}>{h}</Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+            </View>
+
+            <Text style={{ color: text, fontSize: 18, fontWeight: '700' }}>:</Text>
+
+            {/* Minute select */}
+            <View style={{ zIndex: 10 }}>
+              <TouchableOpacity
+                style={{ borderWidth: 1, borderColor: border, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: innerBg }}
+                onPress={() => { setShowMinMenu(v => !v); setShowHourMenu(false); setShowAmPmMenu(false); }}
+              >
+                <Text style={{ color: text, fontSize: 14, fontWeight: '600' }}>{String(selMin).padStart(2, '0')}</Text>
+                <ChevronDown size={14} color={muted} />
+              </TouchableOpacity>
+              {showMinMenu && (
+                <View style={{ position: 'absolute', bottom: 42, left: 0, width: 80, backgroundColor: bg, borderWidth: 1, borderColor: border, borderRadius: 8, overflow: 'hidden' }}>
+                  {[0, 15, 30, 45].map(m => (
+                    <TouchableOpacity key={m} style={{ padding: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: border }} onPress={() => { setSelMin(m); setShowMinMenu(false); }}>
+                      <Text style={{ color: text, textAlign: 'center' }}>{String(m).padStart(2, '0')}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
+            </View>
+
+            {/* AM/PM Select */}
+            <View style={{ zIndex: 10 }}>
+              <TouchableOpacity
+                style={{ borderWidth: 1, borderColor: border, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: innerBg }}
+                onPress={() => { setShowAmPmMenu(v => !v); setShowHourMenu(false); setShowMinMenu(false); }}
+              >
+                <Text style={{ color: text, fontSize: 14, fontWeight: '600' }}>{ampm}</Text>
+                <ChevronDown size={14} color={muted} />
+              </TouchableOpacity>
+              {showAmPmMenu && (
+                <View style={{ position: 'absolute', bottom: 42, left: 0, width: 80, backgroundColor: bg, borderWidth: 1, borderColor: border, borderRadius: 8, overflow: 'hidden' }}>
+                  {['AM', 'PM'].map(a => (
+                    <TouchableOpacity key={a} style={{ padding: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: border }} onPress={() => { setAmpm(a); setShowAmPmMenu(false); }}>
+                      <Text style={{ color: text, textAlign: 'center' }}>{a}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </View>
+              )}
             </View>
           </View>
         ) : (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 10 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <TouchableOpacity style={[{ paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderRadius: 8, borderColor: border }]}
-                onPress={() => setSelHour(h => h === 1 ? 12 : h - 1)}>
-                <Text style={{ color: text, fontSize: 13 }}>−</Text>
-              </TouchableOpacity>
-              <Text style={{ color: text, fontSize: 18, fontWeight: '700', minWidth: 28, textAlign: 'center' }}>{selHour}</Text>
-              <TouchableOpacity style={[{ paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderRadius: 8, borderColor: border }]}
-                onPress={() => setSelHour(h => h === 12 ? 1 : h + 1)}>
-                <Text style={{ color: text, fontSize: 13 }}>+</Text>
-              </TouchableOpacity>
-            </View>
-            <Text style={{ color: text, fontSize: 20, fontWeight: '700' }}>:</Text>
-            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-              <TouchableOpacity style={[{ paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderRadius: 8, borderColor: border }]}
-                onPress={() => setSelMin(m => (m - 5 + 60) % 60)}>
-                <Text style={{ color: text, fontSize: 13 }}>−</Text>
-              </TouchableOpacity>
-              <Text style={{ color: text, fontSize: 18, fontWeight: '700', minWidth: 28, textAlign: 'center' }}>{String(selMin).padStart(2, '0')}</Text>
-              <TouchableOpacity style={[{ paddingHorizontal: 12, paddingVertical: 8, borderWidth: 1, borderRadius: 8, borderColor: border }]}
-                onPress={() => setSelMin(m => (m + 5) % 60)}>
-                <Text style={{ color: text, fontSize: 13 }}>+</Text>
-              </TouchableOpacity>
-            </View>
-            <TouchableOpacity style={[{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 8, backgroundColor: primary }]}
-              onPress={() => setAmpm(v => v === 'AM' ? 'PM' : 'AM')}>
-              <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700' }}>{ampm}</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+            {/* Custom Hour textinput */}
+            <TextInput
+              style={{ borderWidth: 1, borderColor: border, borderRadius: 8, width: 60, height: 40, textAlign: 'center', color: text, fontSize: 16, backgroundColor: innerBg }}
+              value={String(selHour)}
+              onChangeText={(val) => {
+                const h = parseInt(val);
+                if (!val) setSelHour('');
+                else if (h >= 1 && h <= 12) setSelHour(h);
+              }}
+              keyboardType="numeric"
+              maxLength={2}
+            />
+            <Text style={{ color: text, fontSize: 18, fontWeight: '700' }}>:</Text>
+            {/* Custom Minute textinput */}
+            <TextInput
+              style={{ borderWidth: 1, borderColor: border, borderRadius: 8, width: 60, height: 40, textAlign: 'center', color: text, fontSize: 16, backgroundColor: innerBg }}
+              value={String(selMin)}
+              onChangeText={(val) => {
+                const m = parseInt(val);
+                if (!val) setSelMin('');
+                else if (m >= 0 && m <= 59) setSelMin(m);
+              }}
+              keyboardType="numeric"
+              maxLength={2}
+            />
+            {/* AM/PM toggle */}
+            <TouchableOpacity
+              style={{ borderWidth: 1, borderColor: border, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 10, backgroundColor: innerBg }}
+              onPress={() => setAmpm(v => v === 'AM' ? 'PM' : 'AM')}
+            >
+              <Text style={{ color: text, fontSize: 14, fontWeight: '600' }}>{ampm}</Text>
             </TouchableOpacity>
           </View>
         )}
+
+        {/* Toggle Preset/Custom link */}
+        <TouchableOpacity style={{ marginTop: 12 }} onPress={() => setCustomTimeMode(v => !v)}>
+          <Text style={{ color: primary, fontSize: 13, fontWeight: '600' }}>
+            {customTimeMode ? 'Use preset time' : 'Custom time...'}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       {/* OK button */}
@@ -189,121 +315,88 @@ function CalendarPicker({ date, onChange, onClose, colors, theme }) {
   );
 }
 
-// ─── Notification Picker Component ──────────────────────────
+// ─── Notification Picker Component (Screenshot 4 styled) ────
 function NotifPicker({ amount, unit, type, onChange, onClose, colors, theme }) {
   const [localAmount, setLocalAmount] = useState(amount);
   const [localUnit, setLocalUnit] = useState(unit.replace(' before', ''));
   const [localType, setLocalType] = useState(type);
-  const [customMode, setCustomMode] = useState(false);
-  const [customInput, setCustomInput] = useState(String(amount));
 
-  const bg = theme === 'light' ? '#f8f8f8' : '#1e1e2e';
+  const cardBg = theme === 'light' ? '#f3f4f6' : '#27273a';
   const border = colors.border;
   const primary = colors.primary;
   const text = colors.text;
 
-  const QUICK_OPTIONS = [
-    { label: '5 minutes', amount: 5, unit: 'minutes' },
-    { label: '10 minutes', amount: 10, unit: 'minutes' },
-    { label: '15 minutes', amount: 15, unit: 'minutes' },
-    { label: '30 minutes', amount: 30, unit: 'minutes' },
-    { label: '1 hours', amount: 1, unit: 'hours' },
-    { label: '1 days', amount: 1, unit: 'days' },
-  ];
   const UNIT_OPTIONS = ['minutes', 'hours', 'days', 'weeks'];
-
-  const isSelected = (q) => !customMode && localAmount === q.amount && localUnit === q.unit;
+  const TYPE_OPTIONS = ['As Notification', 'As Email'];
 
   const handleDone = () => {
-    const finalAmount = customMode ? (parseInt(customInput) || 10) : localAmount;
-    onChange({ amount: finalAmount, unit: `${localUnit} before`, type: localType });
+    onChange({ amount: parseInt(localAmount) || 10, unit: `${localUnit} before`, type: localType });
     onClose();
   };
 
   return (
-    <View style={{ backgroundColor: bg, borderRadius: 16, borderWidth: 1, borderColor: border, padding: 16 }}>
-      {/* Quick chips */}
-      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 12 }}>
-        {QUICK_OPTIONS.map(q => (
+    <View style={{ backgroundColor: cardBg, borderRadius: 16, borderWidth: 1, borderColor: border, padding: 16 }}>
+      {/* Number input box */}
+      <TextInput
+        style={{ borderWidth: 1, borderColor: border, borderRadius: 10, height: 44, paddingHorizontal: 14, fontSize: 18, fontWeight: '600', color: text, backgroundColor: theme === 'light' ? '#fff' : '#1e1e2e', marginBottom: 14 }}
+        value={String(localAmount)}
+        onChangeText={(v) => setLocalAmount(v.replace(/[^0-9]/g, ''))}
+        keyboardType="numeric"
+      />
+
+      {/* Unit Pills */}
+      <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 8, marginBottom: 14 }}>
+        {UNIT_OPTIONS.map(u => (
           <TouchableOpacity
-            key={q.label}
-            style={[{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
-              isSelected(q) ? { backgroundColor: primary, borderColor: primary } : { borderColor: border }]}
-            onPress={() => { setLocalAmount(q.amount); setLocalUnit(q.unit); setCustomMode(false); }}
+            key={u}
+            style={[{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
+              localUnit === u ? { backgroundColor: primary + '22', borderColor: primary } : { borderColor: border, backgroundColor: theme === 'light' ? '#fff' : '#1e1e2e' }]}
+            onPress={() => setLocalUnit(u)}
           >
-            <Text style={{ color: isSelected(q) ? '#fff' : text, fontSize: 13, fontWeight: isSelected(q) ? '700' : '400' }}>{q.label}</Text>
+            <Text style={{ color: localUnit === u ? primary : text, fontSize: 13, fontWeight: localUnit === u ? '700' : '400' }}>{u}</Text>
           </TouchableOpacity>
         ))}
-        <TouchableOpacity
-          style={[{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
-            customMode ? { backgroundColor: primary, borderColor: primary } : { borderColor: border }]}
-          onPress={() => setCustomMode(true)}
-        >
-          <Text style={{ color: customMode ? '#fff' : text, fontSize: 13, fontWeight: customMode ? '700' : '400' }}>Custom</Text>
-        </TouchableOpacity>
       </View>
 
-      {/* Custom input row */}
-      {customMode && (
-        <View style={{ marginBottom: 12 }}>
-          <TextInput
-            style={{ borderWidth: 1, borderColor: border, borderRadius: 10, height: 44, paddingHorizontal: 14, fontSize: 20, fontWeight: '700', color: text, marginBottom: 10 }}
-            value={customInput}
-            onChangeText={setCustomInput}
-            keyboardType="numeric"
-          />
-          <View style={{ flexDirection: 'row', gap: 8, flexWrap: 'wrap' }}>
-            {UNIT_OPTIONS.map(u => (
-              <TouchableOpacity
-                key={u}
-                style={[{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
-                  localUnit === u ? { backgroundColor: primary, borderColor: primary } : { borderColor: border }]}
-                onPress={() => setLocalUnit(u)}
-              >
-                <Text style={{ color: localUnit === u ? '#fff' : text, fontSize: 13, fontWeight: localUnit === u ? '700' : '400' }}>{u}</Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
-      )}
+      {/* Type Pills */}
+      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 14 }}>
+        {TYPE_OPTIONS.map(t => (
+          <TouchableOpacity
+            key={t}
+            style={[{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
+              localType === t ? { backgroundColor: primary + '22', borderColor: primary } : { borderColor: border, backgroundColor: theme === 'light' ? '#fff' : '#1e1e2e' }]}
+            onPress={() => setLocalType(t)}
+          >
+            <Text style={{ color: localType === t ? primary : text, fontSize: 13, fontWeight: localType === t ? '700' : '400' }}>{t}</Text>
+          </TouchableOpacity>
+        ))}
+      </View>
 
       {/* Separator */}
       <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: border, marginVertical: 10 }} />
 
-      {/* As Notification / As Email */}
-      <View style={{ flexDirection: 'row', gap: 8, marginBottom: 12 }}>
-        {['As Notification', 'As Email'].map(t => (
-          <TouchableOpacity
-            key={t}
-            style={[{ paddingHorizontal: 14, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
-              localType === t ? { backgroundColor: primary, borderColor: primary } : { borderColor: border }]}
-            onPress={() => setLocalType(t)}
-          >
-            <Text style={{ color: localType === t ? '#fff' : text, fontSize: 13, fontWeight: localType === t ? '700' : '400' }}>{t}</Text>
-          </TouchableOpacity>
-        ))}
+      {/* Done button */}
+      <View style={{ alignItems: 'flex-end' }}>
+        <TouchableOpacity style={{ backgroundColor: primary, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10 }} onPress={handleDone}>
+          <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Done</Text>
+        </TouchableOpacity>
       </View>
-
-      {/* Done */}
-      <TouchableOpacity style={{ backgroundColor: primary, borderRadius: 10, alignItems: 'center', paddingVertical: 12 }} onPress={handleDone}>
-        <Text style={{ color: '#fff', fontWeight: '700', fontSize: 15 }}>Done</Text>
-      </TouchableOpacity>
     </View>
   );
 }
 
-// ─── Duration Picker Component (15-min intervals like web) ───
+// ─── Duration Picker Component (15-min intervals up to 12 hours) ──
 function DurationPicker({ startDate, durationMin, onChange, onClose, colors, theme }) {
-  const bg = theme === 'light' ? '#f8f8f8' : '#1e1e2e';
+  const bg = theme === 'light' ? '#fff' : '#1e1e2e';
   const border = colors.border;
   const primary = colors.primary;
   const text = colors.text;
 
-  // Generate 15-min intervals from 0 to 4 hrs (like web)
+  // Generate 15-min intervals up to 12 hours (720 mins)
   const options = [];
-  for (let m = 0; m <= 240; m += 15) {
+  for (let m = 0; m <= 720; m += 15) {
     const endTime = new Date(startDate.getTime() + m * 60000);
-    const endStr = endTime.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const endStr = endTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
     let label;
     if (m === 0) label = '0 mins';
     else if (m < 60) label = `${m} mins`;
@@ -315,7 +408,7 @@ function DurationPicker({ startDate, durationMin, onChange, onClose, colors, the
 
   return (
     <View style={{ backgroundColor: bg, borderRadius: 16, borderWidth: 1, borderColor: border, maxHeight: 300 }}>
-      <ScrollView>
+      <ScrollView nestedScrollEnabled>
         {options.map(o => (
           <TouchableOpacity
             key={o.m}
@@ -352,7 +445,20 @@ export default function DashboardScreen({ navigate }) {
   const [schedTitle, setSchedTitle] = useState('');
   const [schedDesc, setSchedDesc] = useState('');
   const [schedConsultation, setSchedConsultation] = useState(false);
-  const [schedDate, setSchedDate] = useState(() => { const d = new Date(); d.setMinutes(d.getMinutes() + 30); return d; });
+  
+  // Set default start time to the nearest half-an-hour
+  const [schedDate, setSchedDate] = useState(() => {
+    const d = new Date();
+    const mins = d.getMinutes();
+    if (mins > 0 && mins <= 30) {
+      d.setMinutes(30, 0, 0);
+    } else if (mins > 30) {
+      d.setHours(d.getHours() + 1, 0, 0, 0);
+    }
+    return d;
+  });
+  
+  // Default duration = 1 hr (60 mins)
   const [schedDurationMin, setSchedDurationMin] = useState(60);
   const [schedPrivacy, setSchedPrivacy] = useState('public');
   const [schedParticipants, setSchedParticipants] = useState([]);
@@ -361,6 +467,17 @@ export default function DashboardScreen({ navigate }) {
   const [notifAmount, setNotifAmount] = useState(30);
   const [notifUnit, setNotifUnit] = useState('minutes before');
   const [notifType, setNotifType] = useState('As Notification');
+
+  // Timezone search & paginate states
+  const [timezone, setTimezone] = useState('Asia/Kolkata');
+  const [showTimezoneModal, setShowTimezoneModal] = useState(false);
+  const [tzSearch, setTzSearch] = useState('');
+  const [tzPage, setTzPage] = useState(1);
+
+  // Description / Participants toggle states
+  const [showDescId, setShowDescId] = useState(null);
+  const [showParticipantsId, setShowParticipantsId] = useState(null);
+  const [showQR, setShowQR] = useState(false);
 
   // UI toggles for pickers
   const [showCalendar, setShowCalendar] = useState(false);
@@ -389,16 +506,35 @@ export default function DashboardScreen({ navigate }) {
     if (!m) return '—';
     if (m < 60) return `${m} min`;
     if (m === 60) return '1 hr';
-    return `${m / 60} hr`;
+    if (m % 60 === 0) return `${m / 60} hr`;
+    return `${Math.floor(m / 60)}.${(m % 60) * 10 / 60} hr`;
   };
 
   const getEndTimeLabel = () => {
     const end = new Date(schedDate.getTime() + schedDurationMin * 60000);
-    const endStr = end.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+    const endStr = end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
     return `${endStr} (${getDurationLabel(schedDurationMin)})`;
   };
 
-  const notifLabel = `${notifAmount} ${notifUnit}`;
+  // Timezone display name resolver
+  const getTimezoneLabel = (zoneStr) => {
+    const found = TIMEZONES.find(t => t.zone === zoneStr);
+    return found ? found.label : zoneStr;
+  };
+
+  // Timezone search & paginate logic
+  const filteredTzs = useMemo(() => {
+    return TIMEZONES.filter(t =>
+      t.label.toLowerCase().includes(tzSearch.toLowerCase()) ||
+      t.zone.toLowerCase().includes(tzSearch.toLowerCase())
+    );
+  }, [tzSearch]);
+
+  const tzTotalPages = Math.ceil(filteredTzs.length / 5) || 1;
+  const paginatedTzs = useMemo(() => {
+    const start = (tzPage - 1) * 5;
+    return filteredTzs.slice(start, start + 5);
+  }, [filteredTzs, tzPage]);
 
   // ── Actions ──
   const handleInstantMeeting = async () => {
@@ -418,7 +554,16 @@ export default function DashboardScreen({ navigate }) {
     setSchedPrivacy('public'); setSchedDurationMin(60); setRepeat('Does not repeat');
     setNotifAmount(30); setNotifUnit('minutes before'); setNotifType('As Notification');
     setShowCalendar(false); setShowDuration(false); setShowNotif(false); setShowRepeat(false);
-    const d = new Date(); d.setMinutes(d.getMinutes() + 30);
+    setTimezone('Asia/Kolkata'); setTzSearch(''); setTzPage(1);
+    
+    // Set default start time to the nearest half-an-hour
+    const d = new Date();
+    const mins = d.getMinutes();
+    if (mins > 0 && mins <= 30) {
+      d.setMinutes(30, 0, 0);
+    } else if (mins > 30) {
+      d.setHours(d.getHours() + 1, 0, 0, 0);
+    }
     setSchedDate(d);
     setSchedModalVisible(true);
   };
@@ -443,7 +588,7 @@ export default function DashboardScreen({ navigate }) {
         startTime: schedDate.toISOString(),
         endTime: endTime.toISOString(),
         participants: schedParticipants.map(email => ({ name: email.split('@')[0], email })),
-        timezone: 'Asia/Kolkata',
+        timezone: timezone,
         isPrivate: schedPrivacy === 'private',
         isConsultation: schedConsultation,
         notification: { amount: notifAmount, unit: notifUnit, type: notifType },
@@ -476,35 +621,68 @@ export default function DashboardScreen({ navigate }) {
     ]);
   };
 
-  const openInviteModal = (meeting) => { setInviteMeeting(meeting); setInviteModalVisible(true); };
+  const openInviteModal = (meeting) => { 
+    setInviteMeeting(meeting); 
+    setShowQR(false);
+    setInviteModalVisible(true); 
+  };
 
   const copyLink = (link) => { Clipboard.setString(link); showToast('Link copied!'); };
 
   const shareViaEmail = async (meeting) => {
-    setEmailSending(true);
     try {
-      if (meeting?.id && schedParticipants.length > 0) {
-        await sendInvites(meeting.id, schedParticipants); showToast('Email invites sent!');
-      } else {
-        const s = encodeURIComponent(`Join my meeting: ${meeting?.title || ''}`);
-        const b = encodeURIComponent(`Join here: ${meeting?.link || ''}`);
-        await Linking.openURL(`mailto:?subject=${s}&body=${b}`);
-      }
-    } catch (e) { console.log(e); } finally { setEmailSending(false); }
+      const subject = encodeURIComponent(`Meeting Invitation: ${meeting?.title || ''}`);
+      const body = encodeURIComponent(`Hi there,\n\nYou are invited to a video meeting on hi.\n\nJoin the meeting here:\n${meeting?.link || ''}\n\nBest regards`);
+      await Linking.openURL(`mailto:?subject=${subject}&body=${body}`);
+    } catch (e) {
+      console.log('Email composer launch failed:', e.message);
+      await shareViaGeneral(meeting);
+    }
+  };
+
+  const shareViaCalendar = async (meeting) => {
+    try {
+      const start = new Date(meeting.startTime).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+      const end = meeting.endTime
+        ? new Date(meeting.endTime).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '')
+        : new Date(new Date(meeting.startTime).getTime() + 60 * 60000).toISOString().replace(/[-:]/g, '').replace(/\.\d{3}/, '');
+
+      const googleUrl = `https://calendar.google.com/calendar/render?action=TEMPLATE&text=${encodeURIComponent(meeting.title)}&dates=${start}/${end}&details=${encodeURIComponent('Join the hi video conference: ' + meeting.link)}&location=${encodeURIComponent(meeting.link)}`;
+      await Linking.openURL(googleUrl);
+    } catch (e) {
+      console.log('Calendar integration failed:', e.message);
+      await shareViaGeneral(meeting);
+    }
   };
 
   const shareViaWhatsApp = async (meeting) => {
-    const url = `whatsapp://send?text=${encodeURIComponent(`Join "${meeting?.title}":\n${meeting?.link || ''}`)}`;
-    const can = await Linking.canOpenURL(url);
-    if (can) await Linking.openURL(url);
-    else Alert.alert('WhatsApp not installed');
+    try {
+      const textVal = `Join my meeting "${meeting?.title}":\n${meeting?.link || ''}`;
+      const url = `whatsapp://send?text=${encodeURIComponent(textVal)}`;
+      await Linking.openURL(url);
+    } catch (err) {
+      try {
+        const webUrl = `https://api.whatsapp.com/send?text=${encodeURIComponent(`Join "${meeting?.title}":\n${meeting?.link || ''}`)}`;
+        await Linking.openURL(webUrl);
+      } catch (e) {
+        await shareViaGeneral(meeting);
+      }
+    }
   };
 
   const shareViaTelegram = async (meeting) => {
-    const url = `tg://msg?text=${encodeURIComponent(`Join: ${meeting?.link || ''}`)}`;
-    const can = await Linking.canOpenURL(url);
-    if (can) await Linking.openURL(url);
-    else await shareViaGeneral(meeting);
+    try {
+      const textVal = `Join my meeting "${meeting?.title}":\n${meeting?.link || ''}`;
+      const url = `tg://msg?text=${encodeURIComponent(textVal)}`;
+      await Linking.openURL(url);
+    } catch (err) {
+      try {
+        const webUrl = `https://telegram.me/share/url?url=${encodeURIComponent(meeting?.link || '')}&text=${encodeURIComponent(`Join "${meeting?.title}"`)}`;
+        await Linking.openURL(webUrl);
+      } catch (e) {
+        await shareViaGeneral(meeting);
+      }
+    }
   };
 
   const shareViaGeneral = async (meeting) => {
@@ -521,12 +699,11 @@ export default function DashboardScreen({ navigate }) {
     <View style={[styles.mainContainer, { backgroundColor: bg }]}>
       <ScrollView contentContainerStyle={styles.scrollContainer}>
 
-        {/* ── Hero ── */}
+        {/* ── Hero Branding Section (No waving emoji, uses real hi logo image) ── */}
         <View style={styles.dashboardHero}>
           <View style={styles.welcomeRow}>
-            <Text style={[styles.heroWelcome, { color: text }]}>Welcome to </Text>
-            <Text style={[styles.heroBrand, { color: '#f97316' }]}>hi</Text>
-            <Text style={styles.heroHandEmoji}>👋</Text>
+            <Text style={[styles.heroWelcome, { color: text }]}>Welcome to</Text>
+            <Image source={hiLogo} style={styles.topLogoBrand} resizeMode="contain" />
           </View>
           <Text style={[styles.heroSubtitle, { color: textSec }]}>
             Premium video conferencing — secure,{'\n'}simple, and stunning.
@@ -618,56 +795,104 @@ export default function DashboardScreen({ navigate }) {
             <Text style={[styles.emptyText, { color: textSec }]}>Schedule or start a meeting instantly</Text>
           </View>
         ) : (
-          upcomingMeetings.map((meeting) => (
-            <View key={meeting.id} style={[styles.meetingCard, { backgroundColor: card, borderColor: border }]}>
-              <View style={styles.meetingCardHeader}>
-                <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 6 }}>
-                  <Text style={[styles.meetingTitle, { color: text }]} numberOfLines={1}>{meeting.title}</Text>
+          upcomingMeetings.map((meeting) => {
+            const isHost = meeting.userId === user?.id || meeting.userId === user?._id;
+            return (
+              <View key={meeting.id} style={[styles.meetingCard, { backgroundColor: card, borderColor: border }]}>
+                <View style={styles.meetingCardHeader}>
+                  <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, gap: 8 }}>
+                    <Text style={[styles.meetingTitle, { color: text }]} numberOfLines={1}>{meeting.title}</Text>
+                    
+                    {/* (i) Info icon to toggle description */}
+                    <TouchableOpacity onPress={() => {
+                      setShowDescId(prev => prev === meeting.id ? null : meeting.id);
+                      setShowParticipantsId(null);
+                    }}>
+                      <View style={{ width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, borderColor: primary, alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ color: primary, fontSize: 10, fontWeight: '900' }}>i</Text>
+                      </View>
+                    </TouchableOpacity>
+
+                    {/* (?) Help icon to toggle participant list */}
+                    <TouchableOpacity onPress={() => {
+                      setShowParticipantsId(prev => prev === meeting.id ? null : meeting.id);
+                      setShowDescId(null);
+                    }}>
+                      <View style={{ width: 18, height: 18, borderRadius: 9, borderWidth: 1.5, borderColor: textMut, alignItems: 'center', justifyContent: 'center' }}>
+                        <Text style={{ color: textMut, fontSize: 10, fontWeight: '900' }}>?</Text>
+                      </View>
+                    </TouchableOpacity>
+                  </View>
+                  <View style={[styles.badge, { backgroundColor: meeting.isConsultation ? red + '22' : primary + '22' }]}>
+                    <Text style={[styles.badgeText, { color: meeting.isConsultation ? red : primary }]}>
+                      {meeting.status === 'scheduled' ? 'Upcoming' : meeting.status}
+                    </Text>
+                  </View>
                 </View>
-                <View style={[styles.badge, { backgroundColor: meeting.isConsultation ? red + '22' : primary + '22' }]}>
-                  <Text style={[styles.badgeText, { color: meeting.isConsultation ? red : primary }]}>
-                    {meeting.status === 'scheduled' ? 'Upcoming' : meeting.status}
-                  </Text>
-                </View>
-              </View>
-              <View style={styles.meetingDetailsBlock}>
-                <View style={styles.detailRow}>
-                  <Calendar size={14} color={textMut} />
-                  <Text style={[styles.detailText, { color: textSec }]}>{formatMeetingDate(meeting.startTime)}</Text>
-                </View>
-                {meeting.duration != null && (
+                
+                <View style={styles.meetingDetailsBlock}>
                   <View style={styles.detailRow}>
-                    <Clock size={14} color={textMut} />
-                    <Text style={[styles.detailText, { color: textSec }]}>{getDurationLabel(meeting.duration)}</Text>
+                    <Calendar size={14} color={textMut} />
+                    <Text style={[styles.detailText, { color: textSec }]}>{formatMeetingDate(meeting.startTime)}</Text>
+                  </View>
+                  {meeting.duration != null && (
+                    <View style={styles.detailRow}>
+                      <Clock size={14} color={textMut} />
+                      <Text style={[styles.detailText, { color: textSec }]}>{getDurationLabel(meeting.duration)}</Text>
+                    </View>
+                  )}
+                  <View style={styles.detailRow}>
+                    <Text style={[styles.detailText, { color: textSec }]}>👥 {meeting.participants?.length > 0 ? `${meeting.participants.length} participants` : 'No participants'}</Text>
+                  </View>
+                </View>
+
+                {/* Description Box (Toggled by Info Icon) */}
+                {showDescId === meeting.id && (
+                  <View style={{ backgroundColor: theme === 'light' ? '#f3f4f6' : '#1e1e2e', padding: 12, borderRadius: 10, marginBottom: 12 }}>
+                    <Text style={{ color: textSec, fontSize: 13 }}>{meeting.description || 'No description provided.'}</Text>
                   </View>
                 )}
-                <View style={styles.detailRow}>
-                  <Text style={[styles.detailText, { color: textSec }]}>👥 {meeting.participants?.length > 0 ? `${meeting.participants.length} participants` : 'No participants'}</Text>
+
+                {/* Participants Box (Toggled by Help Icon) */}
+                {showParticipantsId === meeting.id && (
+                  <View style={{ backgroundColor: theme === 'light' ? '#f3f4f6' : '#1e1e2e', padding: 12, borderRadius: 10, marginBottom: 12 }}>
+                    <Text style={{ color: text, fontSize: 13, fontWeight: '700', marginBottom: 6 }}>Invited Participants:</Text>
+                    {meeting.participants && meeting.participants.length > 0 ? (
+                      meeting.participants.map((p, idx) => (
+                        <Text key={idx} style={{ color: textSec, fontSize: 12, marginVertical: 2 }}>
+                          • {p.email} {p.name ? `(${p.name})` : ''}
+                        </Text>
+                      ))
+                    ) : (
+                      <Text style={{ color: textMut, fontSize: 12 }}>No participants added</Text>
+                    )}
+                  </View>
+                )}
+
+                <View style={styles.cardActions}>
+                  <TouchableOpacity style={[styles.cardBtnJoin, { backgroundColor: green }]}
+                    onPress={() => navigate('MeetingRoom', { roomName: meeting.roomName, isHost })}>
+                    <Video size={14} color="#fff" />
+                    <Text style={styles.cardBtnJoinText}>Join</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.cardBtnIcon, { borderColor: border, backgroundColor: card }]}
+                    onPress={() => copyLink(meeting.link || `https://hi-video.conferencing/meeting/${meeting.roomName}`)}>
+                    <Copy size={13} color={text} />
+                    <Text style={[styles.cardBtnIconText, { color: textSec }]}>Copy</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.cardBtnIcon, { borderColor: border, backgroundColor: card }]}
+                    onPress={() => openInviteModal(meeting)}>
+                    <ExternalLink size={13} color={text} />
+                    <Text style={[styles.cardBtnIconText, { color: textSec }]}>Invite</Text>
+                  </TouchableOpacity>
+                  <TouchableOpacity style={[styles.cardBtnIcon, { borderColor: 'transparent', backgroundColor: 'transparent' }]}
+                    onPress={() => handleCancel(meeting.id)}>
+                    <Text style={[styles.cardBtnIconText, { color: red, fontSize: 12, fontWeight: '700' }]}>✕ Cancel</Text>
+                  </TouchableOpacity>
                 </View>
               </View>
-              <View style={styles.cardActions}>
-                <TouchableOpacity style={[styles.cardBtnJoin, { backgroundColor: green }]}
-                  onPress={() => navigate('MeetingRoom', { roomName: meeting.roomName, isHost: meeting.userId === user?.id || meeting.userId === user?._id })}>
-                  <Video size={14} color="#fff" />
-                  <Text style={styles.cardBtnJoinText}>Join</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.cardBtnIcon, { borderColor: border, backgroundColor: card }]}
-                  onPress={() => copyLink(meeting.link || `https://hi-video.conferencing/meeting/${meeting.roomName}`)}>
-                  <Copy size={13} color={text} />
-                  <Text style={[styles.cardBtnIconText, { color: textSec }]}>Copy</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.cardBtnIcon, { borderColor: border, backgroundColor: card }]}
-                  onPress={() => openInviteModal(meeting)}>
-                  <ExternalLink size={13} color={text} />
-                  <Text style={[styles.cardBtnIconText, { color: textSec }]}>Invite</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={[styles.cardBtnIcon, { borderColor: 'transparent', backgroundColor: 'transparent' }]}
-                  onPress={() => handleCancel(meeting.id)}>
-                  <Text style={[styles.cardBtnIconText, { color: red, fontSize: 12, fontWeight: '700' }]}>✕ Cancel</Text>
-                </TouchableOpacity>
-              </View>
-            </View>
-          ))
+            );
+          })
         )}
       </ScrollView>
 
@@ -681,7 +906,7 @@ export default function DashboardScreen({ navigate }) {
       {/* ══════════ SCHEDULE MODAL ══════════ */}
       <Modal animationType="slide" transparent visible={schedModalVisible} onRequestClose={() => setSchedModalVisible(false)}>
         <View style={styles.modalBackdrop}>
-          <View style={[styles.modalSheet, { backgroundColor: theme === 'light' ? '#f1f3f8' : '#1a1a2e', borderColor: border }]}>
+          <View style={[styles.modalSheet, { backgroundColor: theme === 'light' ? '#f1f3f8' : '#1a1a2e', borderColor: border, maxHeight: '94%' }]}>
             <View style={[styles.modalHeaderRow, { borderBottomColor: border }]}>
               <Text style={[styles.modalHeading, { color: text }]}>{schedConsultation ? 'Schedule Consultation' : 'Schedule Meeting'}</Text>
               <TouchableOpacity onPress={() => setSchedModalVisible(false)}><X size={22} color={textMut} /></TouchableOpacity>
@@ -745,13 +970,16 @@ export default function DashboardScreen({ navigate }) {
                 <Text style={{ color: primary, fontSize: 12, fontWeight: '600' }}>Custom duration...</Text>
               </TouchableOpacity>
 
-              {/* India Standard Time */}
-              <View style={[styles.infoRow, { marginBottom: 12 }]}>
+              {/* India Standard Time (Search & Select Timezone) */}
+              <TouchableOpacity
+                style={[styles.infoRow, { marginBottom: 12 }]}
+                onPress={() => setShowTimezoneModal(true)}
+              >
                 <Globe size={16} color={primary} />
-                <Text style={[styles.infoRowText, { color: primary }]}>India Standard Time</Text>
-              </View>
+                <Text style={[styles.infoRowText, { color: primary }]}>{getTimezoneLabel(timezone)}</Text>
+              </TouchableOpacity>
 
-              {/* Notification */}
+              {/* Custom Reminder alert container block */}
               <View style={[styles.infoRow, { marginBottom: 8 }]}>
                 <Bell size={16} color={textMut} />
                 <Text style={[styles.infoRowText, { color: textSec }]}>{notifLabel}</Text>
@@ -862,7 +1090,62 @@ export default function DashboardScreen({ navigate }) {
         </View>
       </Modal>
 
-      {/* ══════════ INVITE MODAL ══════════ */}
+      {/* ══════════ TIMEZONE PICKER MODAL (Search & Paginated) ══════════ */}
+      {showTimezoneModal && (
+        <Modal animationType="fade" transparent visible={showTimezoneModal} onRequestClose={() => setShowTimezoneModal(false)}>
+          <View style={styles.modalBackdrop}>
+            <View style={[styles.modalSheet, { backgroundColor: theme === 'light' ? '#f1f3f8' : '#1a1a2e', borderColor: border, height: '70%' }]}>
+              <View style={[styles.modalHeaderRow, { borderBottomColor: border }]}>
+                <Text style={[styles.modalHeading, { color: text }]}>Select Timezone</Text>
+                <TouchableOpacity onPress={() => setShowTimezoneModal(false)}><X size={22} color={textMut} /></TouchableOpacity>
+              </View>
+              <View style={{ padding: 20 }}>
+                {/* Search input box */}
+                <View style={[styles.joinSearchWrap, { backgroundColor: bg, borderColor: border, marginBottom: 16 }]}>
+                  <Keyboard size={18} color={textMut} />
+                  <TextInput
+                    style={[styles.joinTextInput, { color: text }]}
+                    placeholder="Search timezone..."
+                    placeholderTextColor={textMut}
+                    value={tzSearch}
+                    onChangeText={(val) => { setTzSearch(val); setTzPage(1); }}
+                  />
+                </View>
+
+                {/* Paginated List */}
+                <ScrollView style={{ maxHeight: 280 }} showsVerticalScrollIndicator={false}>
+                  {paginatedTzs.map((tz) => (
+                    <TouchableOpacity
+                      key={tz.zone}
+                      style={{ paddingVertical: 14, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: border, flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}
+                      onPress={() => { setTimezone(tz.zone); setShowTimezoneModal(false); }}
+                    >
+                      <View>
+                        <Text style={{ color: text, fontSize: 14, fontWeight: '600' }}>{tz.label}</Text>
+                        <Text style={{ color: textMut, fontSize: 12 }}>{tz.zone}</Text>
+                      </View>
+                      {timezone === tz.zone && <Text style={{ color: primary, fontWeight: '700', fontSize: 16 }}>✓</Text>}
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+
+                {/* Pagination Controls */}
+                <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 20, marginTop: 18 }}>
+                  <TouchableOpacity onPress={() => setTzPage(p => Math.max(1, p - 1))} disabled={tzPage === 1}>
+                    <ChevronLeft size={20} color={tzPage === 1 ? textMut : text} />
+                  </TouchableOpacity>
+                  <Text style={{ color: text, fontSize: 14, fontWeight: '600' }}>{tzPage} of {tzTotalPages}</Text>
+                  <TouchableOpacity onPress={() => setTzPage(p => Math.min(tzTotalPages, p + 1))} disabled={tzPage === tzTotalPages}>
+                    <ChevronRight size={20} color={tzPage === tzTotalPages ? textMut : text} />
+                  </TouchableOpacity>
+                </View>
+              </View>
+            </View>
+          </View>
+        </Modal>
+      )}
+
+      {/* ══════════ INVITE MODAL (Platform Real Logos) ══════════ */}
       <Modal animationType="slide" transparent visible={inviteModalVisible} onRequestClose={() => setInviteModalVisible(false)}>
         <View style={styles.modalBackdrop}>
           <View style={[styles.inviteSheet, { backgroundColor: theme === 'light' ? '#f1f3f8' : '#1a1a2e', borderColor: border }]}>
@@ -878,28 +1161,42 @@ export default function DashboardScreen({ navigate }) {
                   <Text style={styles.inviteCopyBtnText}>Copy</Text>
                 </TouchableOpacity>
               </View>
+
+              {/* Share Options Grid with Real Logos */}
               <View style={styles.shareGrid}>
                 <TouchableOpacity style={[styles.shareOption, { backgroundColor: bg, borderColor: border }]} onPress={() => shareViaEmail(inviteMeeting)}>
-                  {emailSending ? <ActivityIndicator size="small" color={red} /> : <Mail size={28} color={red} />}
+                  <GmailIcon />
                   <Text style={[styles.shareOptionText, { color: text }]}>Email</Text>
                 </TouchableOpacity>
-                <TouchableOpacity style={[styles.shareOption, { backgroundColor: bg, borderColor: border }]} onPress={() => shareViaGeneral(inviteMeeting)}>
-                  <Text style={{ fontSize: 28 }}>📅</Text>
+                <TouchableOpacity style={[styles.shareOption, { backgroundColor: bg, borderColor: border }]} onPress={() => shareViaCalendar(inviteMeeting)}>
+                  <CalendarIcon />
                   <Text style={[styles.shareOptionText, { color: text }]}>Calendar</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.shareOption, { backgroundColor: bg, borderColor: border }]} onPress={() => shareViaWhatsApp(inviteMeeting)}>
-                  <Text style={{ fontSize: 28 }}>💬</Text>
+                  <WhatsAppIcon />
                   <Text style={[styles.shareOptionText, { color: text }]}>WhatsApp</Text>
                 </TouchableOpacity>
                 <TouchableOpacity style={[styles.shareOption, { backgroundColor: bg, borderColor: border }]} onPress={() => shareViaTelegram(inviteMeeting)}>
-                  <Text style={{ fontSize: 28 }}>✈️</Text>
+                  <TelegramIcon />
                   <Text style={[styles.shareOptionText, { color: text }]}>Telegram</Text>
                 </TouchableOpacity>
               </View>
-              <TouchableOpacity style={[styles.qrTile, { backgroundColor: bg, borderColor: border }]} onPress={() => Linking.openURL(inviteMeeting?.link || '')}>
-                <Text style={{ fontSize: 28 }}>🔲</Text>
-                <Text style={[styles.shareOptionText, { color: text }]}>Show QR Code</Text>
+              
+              <TouchableOpacity style={[styles.qrTile, { backgroundColor: bg, borderColor: border }]} onPress={() => setShowQR(v => !v)}>
+                <QRIcon />
+                <Text style={[styles.shareOptionText, { color: text }]}>{showQR ? 'Hide QR Code' : 'Show QR Code'}</Text>
               </TouchableOpacity>
+              
+              {showQR && (
+                <View style={{ alignItems: 'center', justifyContent: 'center', marginTop: 20, padding: 16, backgroundColor: theme === 'light' ? '#fff' : '#1e1e2e', borderRadius: 14, borderWidth: 1, borderColor: border }}>
+                  <Image
+                    source={{ uri: `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(inviteMeeting?.link || '')}` }}
+                    style={{ width: 180, height: 180 }}
+                    resizeMode="contain"
+                  />
+                  <Text style={{ color: textMut, fontSize: 11, marginTop: 8 }}>Scan this QR code to join instantly</Text>
+                </View>
+              )}
             </ScrollView>
           </View>
         </View>
@@ -914,8 +1211,7 @@ const styles = StyleSheet.create({
   dashboardHero: { paddingVertical: 20, marginBottom: 8 },
   welcomeRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 10 },
   heroWelcome: { fontSize: 28, fontWeight: '700' },
-  heroBrand: { fontSize: 28, fontWeight: '900', fontStyle: 'italic' },
-  heroHandEmoji: { fontSize: 24, marginLeft: 4 },
+  topLogoBrand: { width: 48, height: 32, marginLeft: 8 },
   heroSubtitle: { fontSize: 15, lineHeight: 24 },
   sectionTitle: { fontSize: 17, fontWeight: '700', marginBottom: 14 },
   joinInputRow: { flexDirection: 'row', alignItems: 'center', gap: 10, marginBottom: 20 },
@@ -992,8 +1288,8 @@ const styles = StyleSheet.create({
   inviteLinkText: { flex: 1, fontSize: 12, lineHeight: 18 },
   inviteCopyBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingHorizontal: 14, paddingVertical: 10, borderRadius: 10 },
   inviteCopyBtnText: { color: '#fff', fontSize: 13, fontWeight: '700' },
-  shareGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 12 },
-  shareOption: { width: '46%', padding: 20, borderWidth: 1, borderRadius: 14, alignItems: 'center', gap: 8 },
+  shareGrid: { flexDirection: 'row', flexWrap: 'wrap', gap: 12, marginBottom: 12, justifyContent: 'space-between' },
+  shareOption: { width: '47%', paddingVertical: 20, borderWidth: 1, borderRadius: 14, alignItems: 'center', gap: 8, marginBottom: 12 },
   shareOptionText: { fontSize: 13, fontWeight: '600' },
-  qrTile: { padding: 20, borderWidth: 1, borderRadius: 14, alignItems: 'center', gap: 8 },
+  qrTile: { paddingVertical: 20, borderWidth: 1, borderRadius: 14, alignItems: 'center', gap: 8 },
 });

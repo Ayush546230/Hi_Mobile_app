@@ -8,7 +8,7 @@ import messaging from '@react-native-firebase/messaging';
 
 const AuthContext = createContext(null);
 
-const DEFAULT_API_URL = process.env.EXPO_PUBLIC_API_URL || 'https://hi-meeting-app-ayush.loca.lt/api';
+const DEFAULT_API_URL = 'https://hi-mobile-app.onrender.com/api';
 
 // Helper: wrap a promise with a timeout so it doesn't hang forever
 function withTimeout(promise, ms, label = 'Operation') {
