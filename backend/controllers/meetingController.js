@@ -298,7 +298,7 @@ export const updateMeeting = async (req, res) => {
     }
 
     // Notify host & participants via WebSocket to update their dashboards
-    const notifyEmails = [req.user.email.toLowerCase()];
+    const notifyEmails = req.user?.email ? [req.user.email.toLowerCase()] : [];
     if (meeting.participants && meeting.participants.length > 0) {
       meeting.participants.forEach(p => {
         if (p.email) notifyEmails.push(p.email.toLowerCase());

@@ -387,6 +387,7 @@ export default function MeetingRoomScreen({ navigate, params }) {
 
   const onWebViewMessage = async (event) => {
     try {
+      if (!event?.nativeEvent?.data) return;
       const data = JSON.parse(event.nativeEvent.data);
       if (data.type === 'joined-conference') {
         const isHost = roomData?.userId === user?.id;
