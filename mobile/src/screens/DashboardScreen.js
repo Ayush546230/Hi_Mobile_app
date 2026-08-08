@@ -58,37 +58,92 @@ const QRIcon = () => (
   </Svg>
 );
 
-// ─── Timezone Database ──────────────────────────────────────
+// ─── Timezone Database (84 entries) ─────────────────────────
 const TIMEZONES = [
   { label: 'India Standard Time', zone: 'Asia/Kolkata' },
   { label: 'Greenwich Mean Time', zone: 'Africa/Abidjan' },
   { label: 'Greenwich Mean Time', zone: 'Africa/Accra' },
   { label: 'East Africa Time', zone: 'Africa/Addis_Ababa' },
-  { label: 'Central European Standard Time', zone: 'Africa/Algiers' },
-  { label: 'East Africa Time', zone: 'Africa/Asmera' },
-  { label: 'Singapore Standard Time', zone: 'Asia/Singapore' },
-  { label: 'Japan Standard Time', zone: 'Asia/Tokyo' },
-  { label: 'Eastern Standard Time', zone: 'America/New_York' },
+  { label: 'Central European Time', zone: 'Africa/Algiers' },
+  { label: 'West Africa Time', zone: 'Africa/Bangui' },
+  { label: 'Central Africa Time', zone: 'Africa/Blantyre' },
+  { label: 'West Africa Time', zone: 'Africa/Brazzaville' },
+  { label: 'Central Africa Time', zone: 'Africa/Bujumbura' },
+  { label: 'Eastern European Time', zone: 'Africa/Cairo' },
+  { label: 'West Africa Time', zone: 'Africa/Casablanca' },
+  { label: 'South Africa Standard Time', zone: 'Africa/Johannesburg' },
+  { label: 'Central Africa Time', zone: 'Africa/Khartoum' },
+  { label: 'West Africa Time', zone: 'Africa/Lagos' },
+  { label: 'Central Africa Time', zone: 'Africa/Maputo' },
+  { label: 'East Africa Time', zone: 'Africa/Nairobi' },
+  { label: 'Samoa Standard Time', zone: 'Pacific/Apia' },
+  { label: 'Alaska Standard Time', zone: 'America/Anchorage' },
+  { label: 'Argentina Time', zone: 'America/Argentina/Buenos_Aires' },
+  { label: 'Atlantic Standard Time', zone: 'America/Barbados' },
+  { label: 'Colombia Time', zone: 'America/Bogota' },
   { label: 'Central Standard Time', zone: 'America/Chicago' },
   { label: 'Mountain Standard Time', zone: 'America/Denver' },
+  { label: 'Eastern Standard Time', zone: 'America/Detroit' },
+  { label: 'Atlantic Standard Time', zone: 'America/Halifax' },
+  { label: 'Eastern Standard Time', zone: 'America/Indiana/Indianapolis' },
+  { label: 'Venezuela Time', zone: 'America/Caracas' },
+  { label: 'Peru Time', zone: 'America/Lima' },
   { label: 'Pacific Standard Time', zone: 'America/Los_Angeles' },
-  { label: 'Gulf Standard Time', zone: 'Asia/Dubai' },
-  { label: 'Australian Eastern Standard Time', zone: 'Australia/Sydney' },
-  { label: 'British Summer Time', zone: 'Europe/London' },
-  { label: 'Central European Summer Time', zone: 'Europe/Paris' },
-  { label: 'Moscow Standard Time', zone: 'Europe/Moscow' },
-  { label: 'New Zealand Standard Time', zone: 'Pacific/Auckland' },
-  { label: 'Hawaii Standard Time', zone: 'Pacific/Honolulu' },
-  { label: 'Argentina Time', zone: 'America/Argentina/Buenos_Aires' },
+  { label: 'Central Standard Time', zone: 'America/Mexico_City' },
+  { label: 'Eastern Standard Time', zone: 'America/New_York' },
+  { label: 'Mountain Standard Time', zone: 'America/Phoenix' },
+  { label: 'Chile Standard Time', zone: 'America/Santiago' },
   { label: 'Brazil Time', zone: 'America/Sao_Paulo' },
-  { label: 'China Standard Time', zone: 'Asia/Shanghai' },
-  { label: 'Korea Standard Time', zone: 'Asia/Seoul' },
-  { label: 'South Africa Standard Time', zone: 'Africa/Johannesburg' },
-  { label: 'Turkey Time', zone: 'Europe/Istanbul' },
+  { label: 'Newfoundland Standard Time', zone: 'America/St_Johns' },
+  { label: 'Eastern Standard Time', zone: 'America/Toronto' },
+  { label: 'Pacific Standard Time', zone: 'America/Vancouver' },
+  { label: 'Central Standard Time', zone: 'America/Winnipeg' },
+  { label: 'West Greenland Time', zone: 'America/Godthab' },
+  { label: 'Azores Time', zone: 'Atlantic/Azores' },
+  { label: 'Cape Verde Time', zone: 'Atlantic/Cape_Verde' },
+  { label: 'Afghanistan Time', zone: 'Asia/Kabul' },
+  { label: 'Gulf Standard Time', zone: 'Asia/Dubai' },
+  { label: 'Pakistan Standard Time', zone: 'Asia/Karachi' },
+  { label: 'Bangladesh Standard Time', zone: 'Asia/Dhaka' },
+  { label: 'Myanmar Time', zone: 'Asia/Yangon' },
+  { label: 'Indochina Time', zone: 'Asia/Bangkok' },
   { label: 'Hong Kong Time', zone: 'Asia/Hong_Kong' },
+  { label: 'Iran Standard Time', zone: 'Asia/Tehran' },
+  { label: 'Iraq Standard Time', zone: 'Asia/Baghdad' },
   { label: 'Israel Standard Time', zone: 'Asia/Jerusalem' },
+  { label: 'Japan Standard Time', zone: 'Asia/Tokyo' },
+  { label: 'Korea Standard Time', zone: 'Asia/Seoul' },
+  { label: 'Philippines Standard Time', zone: 'Asia/Manila' },
   { label: 'Arabian Standard Time', zone: 'Asia/Riyadh' },
-  { label: 'Pacific/Fiji Time', zone: 'Pacific/Fiji' }
+  { label: 'China Standard Time', zone: 'Asia/Shanghai' },
+  { label: 'Singapore Standard Time', zone: 'Asia/Singapore' },
+  { label: 'Taipei Standard Time', zone: 'Asia/Taipei' },
+  { label: 'Uzbekistan Time', zone: 'Asia/Tashkent' },
+  { label: 'Georgia Standard Time', zone: 'Asia/Tbilisi' },
+  { label: 'Vladivostok Time', zone: 'Asia/Vladivostok' },
+  { label: 'Yakutsk Time', zone: 'Asia/Yakutsk' },
+  { label: 'Nepal Time', zone: 'Asia/Kathmandu' },
+  { label: 'Sri Lanka Time', zone: 'Asia/Colombo' },
+  { label: 'West Indonesia Time', zone: 'Asia/Jakarta' },
+  { label: 'Australian Western Time', zone: 'Australia/Perth' },
+  { label: 'Australian Central Time', zone: 'Australia/Adelaide' },
+  { label: 'Australian Eastern Time', zone: 'Australia/Sydney' },
+  { label: 'Australian Central Time', zone: 'Australia/Darwin' },
+  { label: 'Lord Howe Time', zone: 'Australia/Lord_Howe' },
+  { label: 'British Time', zone: 'Europe/London' },
+  { label: 'Central European Time', zone: 'Europe/Berlin' },
+  { label: 'Central European Time', zone: 'Europe/Paris' },
+  { label: 'Central European Time', zone: 'Europe/Rome' },
+  { label: 'Central European Time', zone: 'Europe/Madrid' },
+  { label: 'Eastern European Time', zone: 'Europe/Athens' },
+  { label: 'Eastern European Time', zone: 'Europe/Bucharest' },
+  { label: 'Eastern European Time', zone: 'Europe/Helsinki' },
+  { label: 'Turkey Time', zone: 'Europe/Istanbul' },
+  { label: 'Moscow Standard Time', zone: 'Europe/Moscow' },
+  { label: 'Central European Time', zone: 'Europe/Warsaw' },
+  { label: 'New Zealand Standard Time', zone: 'Pacific/Auckland' },
+  { label: 'Pacific/Fiji Time', zone: 'Pacific/Fiji' },
+  { label: 'Hawaii Standard Time', zone: 'Pacific/Honolulu' },
 ];
 
 // ─── Inline Calendar Picker Component ───────────────────────
@@ -133,6 +188,10 @@ function CalendarPicker({ date, onChange, onClose, colors, theme }) {
     if (ampm === 'PM') h += 12;
     const m = parseInt(selMin) || 0;
     const d = new Date(viewYear, viewMonth, selDay, h, m, 0);
+    if (d.getTime() < Date.now()) {
+      Alert.alert('Invalid Time', 'Please select a future date and time.');
+      return;
+    }
     onChange(d);
     onClose();
   };
@@ -166,19 +225,22 @@ function CalendarPicker({ date, onChange, onClose, colors, theme }) {
         {cells.map((d, i) => {
           const isSelected = d === selDay && viewMonth === date.getMonth() && viewYear === date.getFullYear();
           const isToday = d === new Date().getDate() && viewMonth === new Date().getMonth() && viewYear === new Date().getFullYear();
+          const now = new Date();
+          const isPast = d ? new Date(viewYear, viewMonth, d, 23, 59, 59).getTime() < new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime() : false;
           return (
             <TouchableOpacity
               key={i}
-              style={{ width: '14.28%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center', padding: 2 }}
-              onPress={() => d && setSelDay(d)}
+              disabled={!d || isPast}
+              style={{ width: '14.28%', aspectRatio: 1, alignItems: 'center', justifyContent: 'center', padding: 2, opacity: isPast ? 0.3 : 1 }}
+              onPress={() => d && !isPast && setSelDay(d)}
             >
               {d ? (
                 <View style={[
                   { width: 34, height: 34, borderRadius: 17, alignItems: 'center', justifyContent: 'center' },
-                  isSelected && { backgroundColor: primary },
+                  isSelected && !isPast && { backgroundColor: primary },
                   !isSelected && isToday && { borderWidth: 1, borderColor: primary }
                 ]}>
-                  <Text style={{ fontSize: 13, color: isSelected ? '#fff' : text, fontWeight: isSelected ? '700' : '400' }}>{d}</Text>
+                  <Text style={{ fontSize: 13, color: isSelected && !isPast ? '#fff' : isPast ? muted : text, fontWeight: isSelected ? '700' : '400' }}>{d}</Text>
                 </View>
               ) : null}
             </TouchableOpacity>
@@ -195,9 +257,9 @@ function CalendarPicker({ date, onChange, onClose, colors, theme }) {
 
         {/* Input area */}
         {!customTimeMode ? (
-          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
-            {/* Hour select */}
-            <View style={{ zIndex: 10 }}>
+          <View>
+            <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
+              {/* Hour select */}
               <TouchableOpacity
                 style={{ borderWidth: 1, borderColor: border, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: innerBg }}
                 onPress={() => { setShowHourMenu(v => !v); setShowMinMenu(false); setShowAmPmMenu(false); }}
@@ -205,23 +267,10 @@ function CalendarPicker({ date, onChange, onClose, colors, theme }) {
                 <Text style={{ color: text, fontSize: 14, fontWeight: '600' }}>{selHour}</Text>
                 <ChevronDown size={14} color={muted} />
               </TouchableOpacity>
-              {showHourMenu && (
-                <View style={{ position: 'absolute', bottom: 42, left: 0, width: 80, maxHeight: 180, backgroundColor: bg, borderWidth: 1, borderColor: border, borderRadius: 8, overflow: 'hidden' }}>
-                  <ScrollView nestedScrollEnabled>
-                    {Array.from({ length: 12 }, (_, idx) => idx + 1).map(h => (
-                      <TouchableOpacity key={h} style={{ padding: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: border }} onPress={() => { setSelHour(h); setShowHourMenu(false); }}>
-                        <Text style={{ color: text, textAlign: 'center' }}>{h}</Text>
-                      </TouchableOpacity>
-                    ))}
-                  </ScrollView>
-                </View>
-              )}
-            </View>
 
-            <Text style={{ color: text, fontSize: 18, fontWeight: '700' }}>:</Text>
+              <Text style={{ color: text, fontSize: 18, fontWeight: '700' }}>:</Text>
 
-            {/* Minute select */}
-            <View style={{ zIndex: 10 }}>
+              {/* Minute select */}
               <TouchableOpacity
                 style={{ borderWidth: 1, borderColor: border, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: innerBg }}
                 onPress={() => { setShowMinMenu(v => !v); setShowHourMenu(false); setShowAmPmMenu(false); }}
@@ -229,19 +278,8 @@ function CalendarPicker({ date, onChange, onClose, colors, theme }) {
                 <Text style={{ color: text, fontSize: 14, fontWeight: '600' }}>{String(selMin).padStart(2, '0')}</Text>
                 <ChevronDown size={14} color={muted} />
               </TouchableOpacity>
-              {showMinMenu && (
-                <View style={{ position: 'absolute', bottom: 42, left: 0, width: 80, backgroundColor: bg, borderWidth: 1, borderColor: border, borderRadius: 8, overflow: 'hidden' }}>
-                  {[0, 15, 30, 45].map(m => (
-                    <TouchableOpacity key={m} style={{ padding: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: border }} onPress={() => { setSelMin(m); setShowMinMenu(false); }}>
-                      <Text style={{ color: text, textAlign: 'center' }}>{String(m).padStart(2, '0')}</Text>
-                    </TouchableOpacity>
-                  ))}
-                </View>
-              )}
-            </View>
 
-            {/* AM/PM Select */}
-            <View style={{ zIndex: 10 }}>
+              {/* AM/PM Select */}
               <TouchableOpacity
                 style={{ borderWidth: 1, borderColor: border, borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8, flexDirection: 'row', alignItems: 'center', gap: 6, backgroundColor: innerBg }}
                 onPress={() => { setShowAmPmMenu(v => !v); setShowHourMenu(false); setShowMinMenu(false); }}
@@ -249,16 +287,87 @@ function CalendarPicker({ date, onChange, onClose, colors, theme }) {
                 <Text style={{ color: text, fontSize: 14, fontWeight: '600' }}>{ampm}</Text>
                 <ChevronDown size={14} color={muted} />
               </TouchableOpacity>
-              {showAmPmMenu && (
-                <View style={{ position: 'absolute', bottom: 42, left: 0, width: 80, backgroundColor: bg, borderWidth: 1, borderColor: border, borderRadius: 8, overflow: 'hidden' }}>
+            </View>
+
+            {/* Inline Scroll Selectors for Hours */}
+            {showHourMenu && (
+              <View style={{ marginTop: 10, padding: 8, backgroundColor: innerBg, borderRadius: 10, borderWidth: 1, borderColor: border }}>
+                <Text style={{ color: muted, fontSize: 11, fontWeight: '600', marginBottom: 6, textTransform: 'uppercase' }}>Select Hour</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                  {Array.from({ length: 12 }, (_, idx) => idx + 1).map(h => (
+                    <TouchableOpacity
+                      key={h}
+                      style={{
+                        paddingHorizontal: 12,
+                        paddingVertical: 8,
+                        borderRadius: 8,
+                        backgroundColor: selHour === h ? primary : bg,
+                        marginRight: 6,
+                        borderWidth: 1,
+                        borderColor: border,
+                        minWidth: 40,
+                        alignItems: 'center'
+                      }}
+                      onPress={() => { setSelHour(h); setShowHourMenu(false); }}
+                    >
+                      <Text style={{ color: selHour === h ? '#fff' : text, fontWeight: '600' }}>{h}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
+            {showMinMenu && (
+              <View style={{ marginTop: 10, padding: 8, backgroundColor: innerBg, borderRadius: 10, borderWidth: 1, borderColor: border }}>
+                <Text style={{ color: muted, fontSize: 11, fontWeight: '600', marginBottom: 6, textTransform: 'uppercase' }}>Select Minute</Text>
+                <ScrollView horizontal showsHorizontalScrollIndicator={false} keyboardShouldPersistTaps="handled">
+                  {[0, 15, 30, 45].map(m => (
+                    <TouchableOpacity
+                      key={m}
+                      style={{
+                        paddingHorizontal: 12,
+                        paddingVertical: 8,
+                        borderRadius: 8,
+                        backgroundColor: selMin === m ? primary : bg,
+                        marginRight: 6,
+                        borderWidth: 1,
+                        borderColor: border,
+                        minWidth: 45,
+                        alignItems: 'center'
+                      }}
+                      onPress={() => { setSelMin(m); setShowMinMenu(false); }}
+                    >
+                      <Text style={{ color: selMin === m ? '#fff' : text, fontWeight: '600' }}>{String(m).padStart(2, '0')}</Text>
+                    </TouchableOpacity>
+                  ))}
+                </ScrollView>
+              </View>
+            )}
+
+            {showAmPmMenu && (
+              <View style={{ marginTop: 10, padding: 8, backgroundColor: innerBg, borderRadius: 10, borderWidth: 1, borderColor: border }}>
+                <Text style={{ color: muted, fontSize: 11, fontWeight: '600', marginBottom: 6, textTransform: 'uppercase' }}>Select AM/PM</Text>
+                <View style={{ flexDirection: 'row', gap: 6 }}>
                   {['AM', 'PM'].map(a => (
-                    <TouchableOpacity key={a} style={{ padding: 10, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: border }} onPress={() => { setAmpm(a); setShowAmPmMenu(false); }}>
-                      <Text style={{ color: text, textAlign: 'center' }}>{a}</Text>
+                    <TouchableOpacity
+                      key={a}
+                      style={{
+                        flex: 1,
+                        paddingVertical: 8,
+                        borderRadius: 8,
+                        backgroundColor: ampm === a ? primary : bg,
+                        borderWidth: 1,
+                        borderColor: border,
+                        alignItems: 'center'
+                      }}
+                      onPress={() => { setAmpm(a); setShowAmPmMenu(false); }}
+                    >
+                      <Text style={{ color: ampm === a ? '#fff' : text, fontWeight: '600' }}>{a}</Text>
                     </TouchableOpacity>
                   ))}
                 </View>
-              )}
-            </View>
+              </View>
+            )}
           </View>
         ) : (
           <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8 }}>
@@ -315,24 +424,79 @@ function CalendarPicker({ date, onChange, onClose, colors, theme }) {
   );
 }
 
-// ─── Notification Picker Component (Screenshot 4 styled) ────
+// ─── Notification Picker Component (Preset/Custom tabbed flow) ────
 function NotifPicker({ amount, unit, type, onChange, onClose, colors, theme }) {
   const [localAmount, setLocalAmount] = useState(amount);
   const [localUnit, setLocalUnit] = useState(unit.replace(' before', ''));
-  const [localType, setLocalType] = useState(type);
+  const [localType, setLocalType] = useState(type || 'As Notification');
+  const [isCustom, setIsCustom] = useState(false);
 
   const cardBg = theme === 'light' ? '#f3f4f6' : '#27273a';
   const border = colors.border;
   const primary = colors.primary;
   const text = colors.text;
 
+  const PRESETS = [
+    { label: '5 minutes', amount: 5, unit: 'minutes before' },
+    { label: '10 minutes', amount: 10, unit: 'minutes before' },
+    { label: '15 minutes', amount: 15, unit: 'minutes before' },
+    { label: '30 minutes', amount: 30, unit: 'minutes before' },
+    { label: '1 hours', amount: 1, unit: 'hours before' },
+    { label: '1 days', amount: 1, unit: 'days before' },
+  ];
+
   const UNIT_OPTIONS = ['minutes', 'hours', 'days', 'weeks'];
   const TYPE_OPTIONS = ['As Notification', 'As Email'];
+
+  const handlePresetSelect = (preset) => {
+    setLocalAmount(preset.amount);
+    setLocalUnit(preset.unit.replace(' before', ''));
+    onChange({ amount: preset.amount, unit: preset.unit, type: localType });
+    onClose();
+  };
 
   const handleDone = () => {
     onChange({ amount: parseInt(localAmount) || 10, unit: `${localUnit} before`, type: localType });
     onClose();
   };
+
+  if (!isCustom) {
+    return (
+      <View style={{ backgroundColor: cardBg, borderRadius: 16, borderWidth: 1, borderColor: border, padding: 16 }}>
+        {/* Presets Grid */}
+        <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 10, marginBottom: 16 }}>
+          {PRESETS.map(p => {
+            const isSelected = localAmount === p.amount && localUnit === p.unit.replace(' before', '');
+            return (
+              <TouchableOpacity
+                key={p.label}
+                style={[{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1 },
+                  isSelected ? { backgroundColor: primary + '22', borderColor: primary } : { borderColor: border, backgroundColor: theme === 'light' ? '#fff' : '#1e1e2e' }]}
+                onPress={() => handlePresetSelect(p)}
+              >
+                <Text style={{ color: isSelected ? primary : text, fontSize: 13, fontWeight: isSelected ? '700' : '400' }}>{p.label}</Text>
+              </TouchableOpacity>
+            );
+          })}
+          {/* Custom Pill */}
+          <TouchableOpacity
+            style={[{ paddingHorizontal: 16, paddingVertical: 8, borderRadius: 20, borderWidth: 1, borderColor: border, backgroundColor: theme === 'light' ? '#fff' : '#1e1e2e' }]}
+            onPress={() => setIsCustom(true)}
+          >
+            <Text style={{ color: text, fontSize: 13 }}>Custom</Text>
+          </TouchableOpacity>
+        </View>
+
+        <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: border, marginVertical: 10 }} />
+
+        <View style={{ alignItems: 'flex-end' }}>
+          <TouchableOpacity style={{ backgroundColor: primary, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10 }} onPress={handleDone}>
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Done</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  }
 
   return (
     <View style={{ backgroundColor: cardBg, borderRadius: 16, borderWidth: 1, borderColor: border, padding: 16 }}>
@@ -372,11 +536,12 @@ function NotifPicker({ amount, unit, type, onChange, onClose, colors, theme }) {
         ))}
       </View>
 
-      {/* Separator */}
       <View style={{ height: StyleSheet.hairlineWidth, backgroundColor: border, marginVertical: 10 }} />
 
-      {/* Done button */}
-      <View style={{ alignItems: 'flex-end' }}>
+      <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+        <TouchableOpacity onPress={() => setIsCustom(false)}>
+          <Text style={{ color: primary, fontSize: 13, fontWeight: '600' }}>Use presets</Text>
+        </TouchableOpacity>
         <TouchableOpacity style={{ backgroundColor: primary, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10 }} onPress={handleDone}>
           <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Done</Text>
         </TouchableOpacity>
@@ -392,37 +557,97 @@ function DurationPicker({ startDate, durationMin, onChange, onClose, colors, the
   const primary = colors.primary;
   const text = colors.text;
 
-  // Generate 15-min intervals up to 12 hours (720 mins)
+  const [customMode, setCustomMode] = useState(false);
+  const [customH, setCustomH] = useState(String(Math.floor(durationMin / 60)));
+  const [customM, setCustomM] = useState(String(durationMin % 60));
+
+  // 0, 15, 30, 45, 60 (15-min steps), then 90, 120, 150... 720 (30-min steps)
   const options = [];
-  for (let m = 0; m <= 720; m += 15) {
+  for (let m = 0; m <= 60; m += 15) {
+    options.push(m);
+  }
+  for (let m = 90; m <= 720; m += 30) {
+    options.push(m);
+  }
+
+  const getLabel = (m) => {
+    if (m === 0) return '0 mins';
+    if (m < 60) return `${m} mins`;
+    if (m === 60) return '1 hr';
+    if (m % 60 === 0) return `${m / 60} hrs`;
+    return `${Math.floor(m / 60)}.5 hrs`;
+  };
+
+  const getEndStr = (m) => {
     const endTime = new Date(startDate.getTime() + m * 60000);
-    const endStr = endTime.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-    let label;
-    if (m === 0) label = '0 mins';
-    else if (m < 60) label = `${m} mins`;
-    else if (m === 60) label = '1 hr';
-    else if (m % 60 === 0) label = `${m / 60} hrs`;
-    else label = `${Math.floor(m / 60)}.${(m % 60) * 10 / 60} hrs`;
-    options.push({ m, endStr, label });
+    const hours = String(endTime.getHours()).padStart(2, '0');
+    const mins = String(endTime.getMinutes()).padStart(2, '0');
+    return `${hours}:${mins}`;
+  };
+
+  const handleCustomDone = () => {
+    const h = parseInt(customH) || 0;
+    const m = parseInt(customM) || 0;
+    const total = Math.min(h * 60 + m, 720);
+    if (total <= 0) { Alert.alert('Invalid', 'Duration must be greater than 0.'); return; }
+    onChange(total);
+    onClose();
+  };
+
+  if (customMode) {
+    return (
+      <View style={{ backgroundColor: bg, borderRadius: 16, borderWidth: 1, borderColor: border, padding: 16 }}>
+        <Text style={{ color: text, fontWeight: '700', fontSize: 14, marginBottom: 12 }}>Custom Duration</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 16 }}>
+          <TextInput
+            style={{ borderWidth: 1, borderColor: border, borderRadius: 10, width: 60, height: 44, textAlign: 'center', color: text, fontSize: 18, fontWeight: '600', backgroundColor: bg }}
+            value={customH}
+            onChangeText={(v) => setCustomH(v.replace(/[^0-9]/g, ''))}
+            keyboardType="numeric"
+            maxLength={2}
+          />
+          <Text style={{ color: text, fontSize: 14, fontWeight: '600' }}>h</Text>
+          <TextInput
+            style={{ borderWidth: 1, borderColor: border, borderRadius: 10, width: 60, height: 44, textAlign: 'center', color: text, fontSize: 18, fontWeight: '600', backgroundColor: bg }}
+            value={customM}
+            onChangeText={(v) => setCustomM(v.replace(/[^0-9]/g, ''))}
+            keyboardType="numeric"
+            maxLength={2}
+          />
+          <Text style={{ color: text, fontSize: 14, fontWeight: '600' }}>m</Text>
+        </View>
+        <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' }}>
+          <TouchableOpacity onPress={() => setCustomMode(false)}>
+            <Text style={{ color: primary, fontSize: 13, fontWeight: '600' }}>Use preset duration</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={{ backgroundColor: primary, paddingHorizontal: 24, paddingVertical: 10, borderRadius: 10 }} onPress={handleCustomDone}>
+            <Text style={{ color: '#fff', fontWeight: '700', fontSize: 14 }}>Done</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
   }
 
   return (
     <View style={{ backgroundColor: bg, borderRadius: 16, borderWidth: 1, borderColor: border, maxHeight: 300 }}>
       <ScrollView nestedScrollEnabled>
-        {options.map(o => (
+        {options.map(m => (
           <TouchableOpacity
-            key={o.m}
+            key={m}
             style={[{ flexDirection: 'row', justifyContent: 'space-between', paddingVertical: 14, paddingHorizontal: 20, borderBottomWidth: StyleSheet.hairlineWidth, borderBottomColor: border },
-              durationMin === o.m && { backgroundColor: primary + '22' }]}
-            onPress={() => { onChange(o.m); onClose(); }}
+              durationMin === m && { backgroundColor: primary + '22' }]}
+            onPress={() => { onChange(m); onClose(); }}
           >
-            <Text style={{ color: text, fontWeight: durationMin === o.m ? '700' : '400', fontSize: 14 }}>
-              {o.endStr}
+            <Text style={{ color: text, fontWeight: durationMin === m ? '700' : '400', fontSize: 14 }}>
+              {getEndStr(m)}
             </Text>
-            <Text style={{ color: durationMin === o.m ? primary : colors.textMuted, fontSize: 14 }}>({o.label})</Text>
+            <Text style={{ color: durationMin === m ? primary : colors.textMuted, fontSize: 14 }}>({getLabel(m)})</Text>
           </TouchableOpacity>
         ))}
       </ScrollView>
+      <TouchableOpacity style={{ padding: 12, alignItems: 'center', borderTopWidth: StyleSheet.hairlineWidth, borderTopColor: border }} onPress={() => setCustomMode(true)}>
+        <Text style={{ color: primary, fontSize: 13, fontWeight: '600' }}>Custom duration...</Text>
+      </TouchableOpacity>
     </View>
   );
 }
@@ -467,6 +692,7 @@ export default function DashboardScreen({ navigate }) {
   const [notifAmount, setNotifAmount] = useState(30);
   const [notifUnit, setNotifUnit] = useState('minutes before');
   const [notifType, setNotifType] = useState('As Notification');
+  const notifLabel = `${notifAmount} ${notifUnit} (${notifType})`;
 
   // Timezone search & paginate states
   const [timezone, setTimezone] = useState('Asia/Kolkata');
@@ -494,10 +720,15 @@ export default function DashboardScreen({ navigate }) {
     if (!d) return 'Select date';
     const parsed = new Date(d);
     if (isNaN(parsed.getTime())) return 'Select date';
-    return parsed.toLocaleString('en-US', {
-      month: 'short', day: 'numeric', year: 'numeric',
-      hour: 'numeric', minute: '2-digit', hour12: true,
-    });
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const month = MONTHS[parsed.getMonth()];
+    const dateVal = parsed.getDate();
+    const year = parsed.getFullYear();
+    let hours = parsed.getHours();
+    const mins = String(parsed.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    return `${month} ${dateVal}, ${year}, ${hours}:${mins} ${ampm}`;
   };
 
   const formatMeetingDate = (s) => {
@@ -505,8 +736,15 @@ export default function DashboardScreen({ navigate }) {
     const d = new Date(s);
     if (isNaN(d.getTime())) return 'Invalid date';
     const isToday = new Date().toDateString() === d.toDateString();
-    if (isToday) return `Today, ${d.toLocaleString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })}`;
-    return d.toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true });
+    const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const month = MONTHS[d.getMonth()];
+    const dateVal = d.getDate();
+    let hours = d.getHours();
+    const mins = String(d.getMinutes()).padStart(2, '0');
+    const ampm = hours >= 12 ? 'PM' : 'AM';
+    hours = hours % 12 || 12;
+    if (isToday) return `Today, ${hours}:${mins} ${ampm}`;
+    return `${month} ${dateVal}, ${hours}:${mins} ${ampm}`;
   };
 
   const getDurationLabel = (m) => {
@@ -519,8 +757,9 @@ export default function DashboardScreen({ navigate }) {
 
   const getEndTimeLabel = () => {
     const end = new Date(schedDate.getTime() + schedDurationMin * 60000);
-    const endStr = end.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
-    return `${endStr} (${getDurationLabel(schedDurationMin)})`;
+    const hours = String(end.getHours()).padStart(2, '0');
+    const mins = String(end.getMinutes()).padStart(2, '0');
+    return `${hours}:${mins} (${getDurationLabel(schedDurationMin)})`;
   };
 
   // Timezone display name resolver
@@ -556,7 +795,7 @@ export default function DashboardScreen({ navigate }) {
 
   const openScheduleModal = (isConsultation = false) => {
     setSchedConsultation(isConsultation);
-    setSchedTitle(isConsultation ? 'Consultation' : '');
+    setSchedTitle(isConsultation ? 'Consultation' : 'Hi Meeting');
     setSchedDesc(''); setSchedParticipants([]); setParticipantInput('');
     setSchedPrivacy('public'); setSchedDurationMin(60); setRepeat('Does not repeat');
     setNotifAmount(30); setNotifUnit('minutes before'); setNotifType('As Notification');
@@ -599,8 +838,8 @@ export default function DashboardScreen({ navigate }) {
         isPrivate: schedPrivacy === 'private',
         isConsultation: schedConsultation,
         notification: { amount: notifAmount, unit: notifUnit, type: notifType },
-        recurrence: repeat === 'Daily' ? 'daily' : repeat === 'Weekly' ? 'weekly' : undefined,
-        recurrenceCount: (repeat === 'Daily' || repeat === 'Weekly') ? 4 : undefined,
+        recurrence: repeat === 'Daily' ? 'daily' : repeat === 'Weekly' ? 'weekly' : repeat === 'Monthly' ? 'monthly' : undefined,
+        recurrenceCount: (repeat === 'Daily' || repeat === 'Weekly' || repeat === 'Monthly') ? 4 : undefined,
       });
       if (schedParticipants.length > 0 && meeting?.id) {
         try { await sendInvites(meeting.id, schedParticipants); } catch (e) { console.log('Invite non-fatal:', e.message); }
@@ -973,13 +1212,11 @@ export default function DashboardScreen({ navigate }) {
                   />
                 </View>
               )}
-              <TouchableOpacity style={{ alignSelf: 'flex-end', marginBottom: 14 }} onPress={() => { setShowDuration(true); }}>
-                <Text style={{ color: primary, fontSize: 12, fontWeight: '600' }}>Custom duration...</Text>
-              </TouchableOpacity>
+
 
               {/* India Standard Time (Search & Select Timezone) */}
               <TouchableOpacity
-                style={[styles.infoRow, { marginBottom: 12 }]}
+                style={[styles.infoRow, { marginTop: 18, marginBottom: 18 }]}
                 onPress={() => setShowTimezoneModal(true)}
               >
                 <Globe size={16} color={primary} />
@@ -989,11 +1226,13 @@ export default function DashboardScreen({ navigate }) {
               {/* Custom Reminder alert container block */}
               <View style={[styles.infoRow, { marginBottom: 8 }]}>
                 <Bell size={16} color={textMut} />
-                <Text style={[styles.infoRowText, { color: textSec }]}>{notifLabel}</Text>
+                <Text style={[styles.infoRowText, { color: textSec, fontSize: 13 }]}>
+                  {notifAmount} {notifUnit.replace(' before', '')} before
+                </Text>
                 <TouchableOpacity style={{ marginLeft: 'auto' }}
                   onPress={() => { setShowNotif(v => !v); setShowCalendar(false); setShowDuration(false); setShowRepeat(false); }}>
                   <Text style={{ color: primary, fontSize: 13, fontWeight: '700' }}>
-                    {showNotif ? 'Done' : 'Add Notification'}
+                    {showNotif ? 'Close' : 'Add Notification'}
                   </Text>
                 </TouchableOpacity>
               </View>
@@ -1108,7 +1347,7 @@ export default function DashboardScreen({ navigate }) {
               </View>
               <View style={{ padding: 20 }}>
                 {/* Search input box */}
-                <View style={[styles.joinSearchWrap, { backgroundColor: bg, borderColor: border, marginBottom: 16 }]}>
+                <View style={[styles.joinSearchWrap, { backgroundColor: bg, borderColor: border, marginBottom: 16, flex: 0, width: '100%' }]}>
                   <Keyboard size={18} color={textMut} />
                   <TextInput
                     style={[styles.joinTextInput, { color: text }]}

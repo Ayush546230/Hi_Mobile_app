@@ -197,10 +197,10 @@ export default function MeetingRoom() {
 
   // When host joins, set hostJoined to true
   useEffect(() => {
-    if (roomData && userProfile?.id === roomData.userId && !roomData.hostJoined && roomData.status === 'scheduled') {
+    if (roomData && userProfile?.id === roomData.userId && !roomData.hostJoined && roomData.status === 'scheduled' && hasJoined) {
       API.put(`/meetings/${roomData.id}`, { hostJoined: true }).catch(console.error);
     }
-  }, [roomData?.id, roomData?.userId, roomData?.hostJoined, roomData?.status, userProfile?.id]);
+  }, [roomData?.id, roomData?.userId, roomData?.hostJoined, roomData?.status, userProfile?.id, hasJoined]);
 
   // Fetch JWT Token for authenticated users
   useEffect(() => {

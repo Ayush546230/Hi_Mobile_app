@@ -18,7 +18,7 @@ self.addEventListener('push', (event) => {
     data = event.data.json();
   } catch (e) {
     data = {
-      title: 'AuthCraft',
+      title: 'Hi',
       body: event.data.text(),
     };
   }

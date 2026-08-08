@@ -1,7 +1,7 @@
 import cron from 'node-cron';
 import Meeting from '../models/Meeting.js';
 import User from '../models/User.js';
-import { sendMeetingReminder } from './emailService.js';
+import { sendMeetingReminder, sendMeetingInvite } from './emailService.js';
 import admin from 'firebase-admin';
 import dotenv from 'dotenv';
 dotenv.config();
@@ -26,6 +26,10 @@ function getReminderTriggerTime(meeting) {
 
 // ─── Send Push Reminder via Firebase FCM ────────────────────
 async function sendPushReminder(meeting, user) {
+  if (user.preferences?.notifications === false) {
+    console.log(`🔔 Push reminder skipped: User ${user.email} has disabled reminders.`);
+    return;
+  }
   if (!user.fcmToken) {
     console.warn(`🔔 Push skipped: No FCM token registered for user ${user.email}`);
     return;
@@ -33,6 +37,7 @@ async function sendPushReminder(meeting, user) {
 
   const notif = meeting.notification || { amount: 30, unit: 'minutes before' };
   const timeText = `${notif.amount} ${notif.unit.replace(' before', '')}`;
+  const hasSounds = user.preferences?.soundEffects !== false;
 
   const message = {
     token: user.fcmToken,
@@ -48,8 +53,8 @@ async function sendPushReminder(meeting, user) {
     android: {
       priority: 'high',
       notification: {
-        channelId: 'meeting_reminders',
-        sound: 'default',
+        channelId: hasSounds ? 'meeting_reminders' : 'meeting_reminders_silent',
+        sound: hasSounds ? 'default' : undefined,
       },
     },
   };
@@ -64,6 +69,53 @@ async function sendPushReminder(meeting, user) {
     }
   } catch (err) {
     console.error(`🔔 FCM reminder failed for ${user.email}:`, err.message);
+  }
+}
+
+// ─── Process Delayed Invitations (Sent 6 hours before meeting) ───
+async function processDelayedInvites() {
+  try {
+    const now = new Date();
+    // 6 hours in milliseconds = 6 * 60 * 60 * 1000 = 21,600,000 ms
+    const sixHoursLater = new Date(now.getTime() + 6 * 60 * 60 * 1000);
+
+    // Find meetings that are scheduled, invite not yet sent, and starting within the next 6 hours
+    const pendingInvites = await Meeting.find({
+      status: 'scheduled',
+      inviteSent: false,
+      startTime: { $lte: sixHoursLater },
+    });
+
+    for (const meeting of pendingInvites) {
+      try {
+        console.log(`✉️ Triggering delayed invitation email for "${meeting.title}" (starts at ${meeting.startTime})`);
+
+        // Get the meeting owner (sender)
+        const owner = await User.findById(meeting.userId);
+        const senderName = owner ? (owner.name || 'Someone') : 'Someone';
+
+        // Send email invitations to all participants
+        if (meeting.participants && meeting.participants.length > 0) {
+          for (const p of meeting.participants) {
+            if (p.email) {
+              await sendMeetingInvite(meeting.toJSON(), p.email, senderName).catch(err =>
+                console.error(`Delayed invite email failed for ${p.email}:`, err.message)
+              );
+            }
+          }
+        }
+
+        // Mark as invite sent
+        await Meeting.updateOne({ _id: meeting._id }, { $set: { inviteSent: true } });
+      } catch (innerErr) {
+        console.error(`Delayed invitation failed for meeting ${meeting._id}:`, innerErr);
+        // Force update to prevent infinite loops on error
+        await Meeting.updateOne({ _id: meeting._id }, { $set: { inviteSent: true } })
+          .catch(e => console.error(`Failed to force update inviteSent for ${meeting._id}:`, e));
+      }
+    }
+  } catch (err) {
+    console.error('Delayed invitation scheduler error:', err);
   }
 }
 
@@ -91,15 +143,20 @@ async function processReminders() {
           
           if (owner) {
             const notifType = meeting.notification?.type || 'As Notification';
+            const remindersEnabled = owner.preferences?.notifications !== false;
 
-            if (notifType === 'As Email') {
-              // Send email to the owner
-              await sendMeetingReminder(meeting.toJSON(), owner.email).catch(err =>
-                console.error(`Email reminder failed for ${owner.email}:`, err.message)
-              );
+            if (remindersEnabled) {
+              if (notifType === 'As Email') {
+                // Send email to the owner
+                await sendMeetingReminder(meeting.toJSON(), owner.email).catch(err =>
+                  console.error(`Email reminder failed for ${owner.email}:`, err.message)
+                );
+              } else {
+                // Send push notification to owner
+                await sendPushReminder(meeting, owner);
+              }
             } else {
-              // Send push notification to owner
-              await sendPushReminder(meeting, owner);
+              console.log(`⏰ Reminder skipped: Meeting owner ${owner.email} has disabled reminders.`);
             }
           }
 
@@ -147,6 +204,7 @@ async function autoCompleteMeetings() {
 export function startReminderScheduler() {
   // Run every minute
   cron.schedule('* * * * *', async () => {
+    await processDelayedInvites();
     await processReminders();
     await autoCompleteMeetings();
   });

@@ -128,7 +128,7 @@ export const initiateLogin = async (req, res) => {
     const loginRequest = new PushLoginRequest({
       userId: user._id,
       email: user.email,
-      deviceInfo: req.headers['user-agent'] || 'AuthCraft Mobile',
+      deviceInfo: req.headers['user-agent'] || 'Hi Mobile',
     });
     await loginRequest.save();
 
@@ -136,7 +136,7 @@ export const initiateLogin = async (req, res) => {
       token: user.fcmToken,
       notification: {
         title: 'Login Request',
-        body: 'Someone wants to sign in to your AuthCraft account',
+        body: 'Someone wants to sign in to your Hi account',
       },
       data: {
         type: 'push_login',

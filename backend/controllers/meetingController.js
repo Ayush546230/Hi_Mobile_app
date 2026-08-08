@@ -147,7 +147,10 @@ export const getJaaSToken = async (req, res) => {
     // Generate the JaaS token
     const token = generateJaaSToken(req.user, req.params.roomName, isHost);
     
-    res.json({ token });
+    res.json({ 
+      token,
+      appId: process.env.JAAS_APP_ID || 'vpaas-magic-cookie-3d02f5dbcd50462788e0b6bbfcb6bbd4'
+    });
   } catch (err) {
     console.error('Get JaaS token error:', err);
     res.status(500).json({ error: err.message || 'Failed to generate token' });
@@ -166,20 +169,28 @@ export const createMeeting = async (req, res) => {
     const link = getMeetingLink(roomName);
 
     const meetingsToCreate = [];
-    const count = (recurrence === 'daily' || recurrence === 'weekly') ? (recurrenceCount || 2) : 1;
+    const count = (recurrence === 'daily' || recurrence === 'weekly' || recurrence === 'monthly') ? (recurrenceCount || 2) : 1;
     
+    const now = new Date();
     for (let i = 0; i < count; i++) {
       let currentStartTime = startTime ? new Date(startTime) : new Date();
       let currentEndTime = endTime ? new Date(endTime) : undefined;
       
       if (i > 0) {
-        const daysToAdd = recurrence === 'daily' ? i : (recurrence === 'weekly' ? i * 7 : 0);
-        currentStartTime.setDate(currentStartTime.getDate() + daysToAdd);
-        if (currentEndTime) {
-          currentEndTime.setDate(currentEndTime.getDate() + daysToAdd);
+        if (recurrence === 'daily') {
+          currentStartTime.setDate(currentStartTime.getDate() + i);
+          if (currentEndTime) currentEndTime.setDate(currentEndTime.getDate() + i);
+        } else if (recurrence === 'weekly') {
+          currentStartTime.setDate(currentStartTime.getDate() + i * 7);
+          if (currentEndTime) currentEndTime.setDate(currentEndTime.getDate() + i * 7);
+        } else if (recurrence === 'monthly') {
+          currentStartTime.setMonth(currentStartTime.getMonth() + i);
+          if (currentEndTime) currentEndTime.setMonth(currentEndTime.getMonth() + i);
         }
       }
       
+      const isWithinSixHours = (currentStartTime.getTime() - now.getTime()) <= 6 * 60 * 60 * 1000;
+
       meetingsToCreate.push({
         userId: req.user._id,
         type: type === 'instant' ? 'instant' : 'scheduled',
@@ -196,6 +207,7 @@ export const createMeeting = async (req, res) => {
         isConsultation: isConsultation || false,
         notification: notification || { amount: 30, unit: 'minutes before', type: 'As Notification' },
         hostJoined: type === 'instant' ? true : false,
+        inviteSent: (type === 'instant' || isWithinSixHours) ? true : false,
       });
     }
 
@@ -205,12 +217,22 @@ export const createMeeting = async (req, res) => {
     if (participants && participants.length > 0) {
       for (const meeting of createdMeetings) {
         const meetingData = meeting.toJSON();
+        
+        // Always trigger socket update immediately
         for (const p of participants) {
           if (p.email) {
             io.to(`dashboard-${p.email.toLowerCase()}`).emit('dashboard-update');
-            sendMeetingInvite(meetingData, p.email, req.user.name || 'Someone').catch(err =>
-              console.error(`Failed to send invite to ${p.email}:`, err.message)
-            );
+          }
+        }
+
+        // Only send invite email immediately if starts within 2 hours
+        if (meeting.inviteSent) {
+          for (const p of participants) {
+            if (p.email) {
+              sendMeetingInvite(meetingData, p.email, req.user.name || 'Someone').catch(err =>
+                console.error(`Failed to send invite to ${p.email}:`, err.message)
+              );
+            }
           }
         }
       }
@@ -248,6 +270,9 @@ export const updateMeeting = async (req, res) => {
     if (hostJoined !== undefined) {
       meeting.hostJoined = hostJoined;
       if (hostJoined === true) {
+        if (meeting.isConsultation && meeting.status !== 'completed') {
+          meeting.endTime = new Date(Date.now() + meeting.duration * 60000);
+        }
         io.to(meeting.roomName).emit('host-joined');
       }
     }
@@ -272,12 +297,17 @@ export const updateMeeting = async (req, res) => {
       }
     }
 
-    // Notify participants via WebSocket to update their dashboards
+    // Notify host & participants via WebSocket to update their dashboards
+    const notifyEmails = [req.user.email.toLowerCase()];
     if (meeting.participants && meeting.participants.length > 0) {
       meeting.participants.forEach(p => {
-        if (p.email) io.to(`dashboard-${p.email.toLowerCase()}`).emit('dashboard-update');
+        if (p.email) notifyEmails.push(p.email.toLowerCase());
       });
     }
+    const uniqueEmails = [...new Set(notifyEmails)];
+    uniqueEmails.forEach(email => {
+      io.to(`dashboard-${email}`).emit('dashboard-update');
+    });
 
     res.json({ meeting: meeting.toJSON() });
   } catch (err) {

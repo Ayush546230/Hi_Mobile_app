@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { StyleSheet, Text, View, TouchableOpacity, ActivityIndicator, Modal, ScrollView, Alert, Dimensions, TextInput } from 'react-native';
+import { StyleSheet, Text, View, TouchableOpacity, ActivityIndicator, Modal, ScrollView, Alert, Dimensions, TextInput, Image } from 'react-native';
 import { WebView } from 'react-native-webview';
 import { useAuth } from '../context/AuthContext';
 import { useMeetings } from '../context/MeetingContext';
@@ -14,7 +14,7 @@ export default function MeetingRoomScreen({ navigate, params }) {
   const { roomName, isHost: initialIsHost } = params || {};
   const { colors } = useTheme();
   const { user, API, socket } = useAuth();
-  const { userPreferences } = useMeetings();
+  const { userPreferences, refreshMeetings } = useMeetings();
 
   const [roomData, setRoomData] = useState(null);
   const [jwtToken, setJwtToken] = useState(null);
@@ -37,6 +37,10 @@ export default function MeetingRoomScreen({ navigate, params }) {
   const [ended, setEnded] = useState(false);
   const [hasLeft, setHasLeft] = useState(false);
 
+  const [showLeaveOptionsModal, setShowLeaveOptionsModal] = useState(false);
+  const [jitsiKey, setJitsiKey] = useState(0);
+  const [jaasAppId, setJaasAppId] = useState(JAAS_APP_ID);
+
   const socketRef = useRef(socket);
   const joinTimeRef = useRef(Date.now());
 
@@ -50,15 +54,47 @@ export default function MeetingRoomScreen({ navigate, params }) {
     const fetchRoomData = async () => {
       try {
         const res = await API.get(`/meetings/room/${roomName}`);
-        setRoomData(res.data.meeting);
+        const m = res.data.meeting;
+        setRoomData(m);
 
         // Fetch JaaS token
         try {
           const tokRes = await API.get(`/meetings/room/${roomName}/token`);
           setJwtToken(tokRes.data.token);
+          if (tokRes.data.appId) {
+            setJaasAppId(tokRes.data.appId);
+          }
         } catch (tokErr) {
           console.log('JaaS token error (falling back to guest):', tokErr.message);
           setJwtToken('');
+        }
+
+        // Check permission immediately
+        const isHost = m.userId === user?.id;
+        const isInvitee = m.participants?.some(p => p.email === user?.email);
+        const isInstantMeeting = m.type === 'instant';
+
+        let requiresPermission = false;
+        if (!isHost) {
+          if (isInstantMeeting) {
+            requiresPermission = false;
+          } else if (m.isPrivate) {
+            requiresPermission = true; // Everyone must knock
+          } else {
+            requiresPermission = !isInvitee; // Invitees join directly, guests knock
+          }
+        }
+
+        if (requiresPermission && !admitted) {
+          setKnocking(true);
+          if (socket) {
+            socket.emit('guest-knocking', {
+              roomName,
+              user: { name: user?.preferences?.displayName || user?.name || 'Guest', email: user?.email, isInvitee }
+            });
+          }
+        } else {
+          setJoined(true);
         }
       } catch (err) {
         Alert.alert('Error', 'Meeting not found');
@@ -84,6 +120,15 @@ export default function MeetingRoomScreen({ navigate, params }) {
         setWarningPopup(null);
       });
 
+      socket.on('host-joined', async () => {
+        try {
+          const res = await API.get(`/meetings/room/${roomName}`);
+          setRoomData(res.data.meeting);
+        } catch (err) {
+          console.log('Failed to refresh room data on host join:', err.message);
+        }
+      });
+
       socket.on('guest-knocking', (guest) => {
         setKnockingGuests(prev => {
           if (prev.some(g => g.socketId === guest.socketId)) return prev;
@@ -107,23 +152,13 @@ export default function MeetingRoomScreen({ navigate, params }) {
       if (socket) {
         socket.off('meeting-ended');
         socket.off('consultation-extended');
+        socket.off('host-joined');
         socket.off('guest-knocking');
         socket.off('guest-admitted');
         socket.off('guest-denied');
       }
     };
-  }, [roomName, socket]);
-
-  // Handle Host joining notification
-  useEffect(() => {
-    if (roomData && user?.id === roomData.userId && !roomData.hostJoined && roomData.status === 'scheduled') {
-      API.put(`/meetings/${roomData.id}`, { hostJoined: true })
-        .then(() => {
-          if (socket) socket.emit('host-joined');
-        })
-        .catch(console.error);
-    }
-  }, [roomData, user]);
+  }, [roomName, socket, user, API, admitted]);
 
   // Countdown timer for Consultation
   useEffect(() => {
@@ -141,15 +176,18 @@ export default function MeetingRoomScreen({ navigate, params }) {
 
       // Host Warnings
       if (user?.id === roomData.userId) {
-        if (remainingSecs === 300) setWarningPopup(300);
-        else if (remainingSecs === 120) setWarningPopup(120);
-        else if (remainingSecs === 60) setWarningPopup(60);
-        else if (remainingSecs === 10) setWarningPopup(10);
+        if (remainingSecs === 600) setWarningPopup(600); // 10 min
+        else if (remainingSecs === 300) setWarningPopup(300); // 5 min
+        else if (remainingSecs === 120) setWarningPopup(120); // 2 min
+        else if (remainingSecs === 60) setWarningPopup(60); // 1 min
+        else if (remainingSecs <= 20 && remainingSecs > 0) {
+          setWarningPopup(remainingSecs); // Continuous countdown from 20s down to 1s
+        }
       }
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [roomData, ended, joined]);
+  }, [roomData, ended, joined, user]);
 
   // Post-meeting countdown screen
   useEffect(() => {
@@ -169,33 +207,46 @@ export default function MeetingRoomScreen({ navigate, params }) {
     return () => clearInterval(interval);
   }, [ended, hasLeft]);
 
-  const handleJoin = () => {
-    const isHost = roomData?.userId === user?.id;
-    const isInvitee = roomData?.participants?.some(p => p.email === user?.email);
-    const isInstantMeeting = roomData?.type === 'instant';
-
-    let requiresPermission = false;
-    if (!isHost) {
-      if (isInstantMeeting) {
-        requiresPermission = false;
-      } else if (roomData?.isPrivate) {
-        requiresPermission = true; // Everyone must knock
-      } else {
-        requiresPermission = !isInvitee; // Invitees join directly, guests knock
+  const handleEndMeeting = async () => {
+    setEnded(true);
+    setTimeLeft(30);
+    const durationMin = Math.round((Date.now() - joinTimeRef.current) / 60000);
+    if (roomData && user?.id === roomData.userId) {
+      try {
+        await API.put(`/meetings/${roomData.id}`, { status: 'completed', duration: durationMin });
+        if (socket) socket.emit('meeting-ended');
+        refreshMeetings();
+      } catch (err) {
+        console.log('Error ending meeting:', err);
       }
     }
+  };
 
-    if (requiresPermission && !admitted) {
-      setKnocking(true);
-      if (socket) {
-        socket.emit('guest-knocking', {
-          roomName,
-          user: { name: displayName, email: user?.email, isInvitee }
-        });
+  const handleEndMeetingForAll = async () => {
+    setShowLeaveOptionsModal(false);
+    const durationMin = Math.round((Date.now() - joinTimeRef.current) / 60000);
+    if (roomData && user?.id === roomData.userId) {
+      try {
+        await API.put(`/meetings/${roomData.id}`, { status: 'completed', duration: durationMin });
+        if (socket) socket.emit('meeting-ended');
+        refreshMeetings();
+      } catch (err) {
+        console.log('Error ending meeting:', err);
       }
-    } else {
-      setJoined(true);
     }
+    navigate('Dashboard');
+  };
+
+  const handleLeave = () => {
+    setShowLeaveOptionsModal(false);
+    setHasLeft(true);
+    setTimeLeft(30);
+  };
+
+  const handleRejoin = () => {
+    setHasLeft(false);
+    setJoined(true);
+    setTimeLeft(30);
   };
 
   const handleAdmit = (guestSocketId) => {
@@ -226,56 +277,17 @@ export default function MeetingRoomScreen({ navigate, params }) {
     }
   };
 
-  const handleEndMeeting = async () => {
-    setEnded(true);
-    setTimeLeft(30);
-    const durationMin = Math.round((Date.now() - joinTimeRef.current) / 60000);
-    if (roomData && user?.id === roomData.userId) {
-      try {
-        await API.put(`/meetings/${roomData.id}`, { status: 'completed', duration: durationMin });
-        if (socket) socket.emit('meeting-ended');
-      } catch (err) {
-        console.log('Error ending meeting:', err);
-      }
-    }
-  };
-
-  const handleLeave = () => {
-    setHasLeft(true);
-    setTimeLeft(30);
-  };
-
-  const handleRejoin = () => {
-    setHasLeft(false);
-    setJoined(true);
-    setTimeLeft(30);
-  };
-
-  const handleLeaveClick = () => {
-    const isHost = roomData?.userId === user?.id;
-    if (isHost) {
-      Alert.alert(
-        'Leave Meeting',
-        'Choose how you want to exit the meeting:',
-        [
-          { text: 'Cancel', style: 'cancel' },
-          { text: 'Leave Meeting', onPress: handleLeave },
-          { text: 'End Meeting for All', style: 'destructive', onPress: handleEndMeeting }
-        ]
-      );
-    } else {
-      handleLeave();
-    }
-  };
-
-  // Build Jitsi WebView Link
-  // If JaaS credentials are not complete, we can fallback to standard meet.jit.si
   const getJitsiSource = () => {
     const isHost = roomData?.userId === user?.id;
-    const configString = `#config.startWithAudioMuted=${audioMuted}&config.startWithVideoMuted=${videoMuted}&config.disableDeepLinking=true&config.prejoinPageEnabled=false&userInfo.displayName="${encodeURIComponent(displayName)}"`;
+    const startAudioMuted = !userPreferences?.micDefault;
+    const startVideoMuted = !userPreferences?.cameraDefault;
+    const logoUrl = 'https://video-conferencing-website-one.vercel.app/Hi_Logo.png';
+    const configString = `#config.startWithAudioMuted=${startAudioMuted}&config.startWithVideoMuted=${startVideoMuted}&config.disableDeepLinking=true&config.prejoinPageEnabled=true&userInfo.displayName="${encodeURIComponent(displayName)}"` +
+      `&interfaceConfig.SHOW_JITSI_WATERMARK=false&interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false&interfaceConfig.SHOW_POWERED_BY=false` +
+      `&interfaceConfig.SHOW_BRAND_WATERMARK=true&interfaceConfig.DEFAULT_LOGO_URL="${encodeURIComponent(logoUrl)}"&interfaceConfig.BRAND_WATERMARK_LINK="${encodeURIComponent('https://video-conferencing-website-one.vercel.app')}"`;
     
     if (jwtToken && roomData) {
-      return { uri: `https://8x8.vc/${JAAS_APP_ID}/${roomName}?jwt=${jwtToken}${configString}` };
+      return { uri: `https://8x8.vc/${jaasAppId}/${roomName}?jwt=${jwtToken}${configString}` };
     } else {
       // Free public fallback
       return { uri: `https://meet.jit.si/${roomName}${configString}` };
@@ -359,73 +371,38 @@ export default function MeetingRoomScreen({ navigate, params }) {
     );
   }
 
-  // Pre-join Room
-  if (!joined) {
-    return (
-      <View style={[styles.prejoinContainer, { backgroundColor: colors.bg }]}>
-        <View style={[styles.prejoinCard, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
-          <Text style={[styles.prejoinTitle, { color: colors.text }]}>Ready to join?</Text>
-          <Text style={[styles.prejoinRoomName, { color: colors.primary, fontFamily: 'monospace' }]}>{roomName}</Text>
-          
-          {/* Mock camera view box */}
-          <View style={[styles.cameraMock, { backgroundColor: '#1a1a2e', borderColor: colors.border }]}>
-            {videoMuted ? (
-              <View style={styles.noVideoPlaceholder}>
-                <VideoOff size={40} color={colors.textMuted} style={{ marginBottom: 8 }} />
-                <Text style={[styles.cameraMockText, { color: colors.textMuted }]}>Camera is off</Text>
-              </View>
-            ) : (
-              <View style={styles.noVideoPlaceholder}>
-                <VideoIcon size={40} color={colors.primary} style={{ marginBottom: 8 }} />
-                <Text style={[styles.cameraMockText, { color: '#fff' }]}>Camera is on</Text>
-              </View>
-            )}
-          </View>
+  const runBeforeFirstLimit = `
+    (function() {
+      var checkInterval = setInterval(function() {
+        if (window.APP && window.APP.conference && typeof window.APP.conference.isJoined === 'function') {
+          if (window.APP.conference.isJoined()) {
+            clearInterval(checkInterval);
+            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'joined-conference' }));
+          }
+        }
+      }, 1000);
+    })();
+    true;
+  `;
 
-          {/* Toggle buttons row matching web style */}
-          <View style={styles.togglesRow}>
-            <TouchableOpacity 
-              style={[
-                styles.toggleCircle, 
-                { backgroundColor: audioMuted ? colors.bg : colors.primaryLight }
-              ]}
-              onPress={() => setAudioMuted(!audioMuted)}
-            >
-              {audioMuted ? <MicOff size={20} color={colors.textSecondary} /> : <Mic size={20} color={colors.primary} />}
-            </TouchableOpacity>
-
-            <TouchableOpacity 
-              style={[
-                styles.toggleCircle, 
-                { backgroundColor: videoMuted ? colors.bg : colors.primaryLight }
-              ]}
-              onPress={() => setVideoMuted(!videoMuted)}
-            >
-              {videoMuted ? <VideoOff size={20} color={colors.textSecondary} /> : <VideoIcon size={20} color={colors.primary} />}
-            </TouchableOpacity>
-          </View>
-
-          {/* Display name input matching web */}
-          <View style={styles.nameFormGroup}>
-            <TextInput
-              style={[styles.nameInput, { color: colors.text, borderColor: colors.border, backgroundColor: colors.bg }]}
-              placeholder="Your name"
-              placeholderTextColor={colors.textMuted}
-              value={displayName}
-              onChangeText={setDisplayName}
-            />
-          </View>
-
-          <TouchableOpacity style={[styles.joinRoomBtn, { backgroundColor: colors.success || '#2d6a4f' }]} onPress={handleJoin}>
-            <View style={styles.joinBtnRow}>
-              <Text style={styles.joinRoomBtnText}>Join now</Text>
-              <ArrowRight size={16} color="#fff" />
-            </View>
-          </TouchableOpacity>
-        </View>
-      </View>
-    );
-  }
+  const onWebViewMessage = async (event) => {
+    try {
+      const data = JSON.parse(event.nativeEvent.data);
+      if (data.type === 'joined-conference') {
+        const isHost = roomData?.userId === user?.id;
+        if (isHost && !roomData?.hostJoined) {
+          console.log('Host joined the conference! Activating duration timer.');
+          await API.put(`/meetings/${roomData.id}`, { hostJoined: true });
+          if (socket) socket.emit('host-joined');
+          // Refetch roomData so we get the correct endTime
+          const res = await API.get(`/meetings/room/${roomName}`);
+          setRoomData(res.data.meeting);
+        }
+      }
+    } catch (err) {
+      console.log('Error parsing WebView message:', err);
+    }
+  };
 
   // Active meeting with full-screen Webview
   return (
@@ -441,6 +418,7 @@ export default function MeetingRoomScreen({ navigate, params }) {
       )}
 
       <WebView 
+        key={jitsiKey}
         source={getJitsiSource()} 
         style={styles.webview}
         javaScriptEnabled={true}
@@ -450,29 +428,43 @@ export default function MeetingRoomScreen({ navigate, params }) {
         allowsInlineMediaPlayback={true}
         startInLoadingState={true}
         renderLoading={() => <ActivityIndicator size="large" color={colors.primary} style={StyleSheet.absoluteFill} />}
+        injectedJavaScript={runBeforeFirstLimit}
+        onMessage={onWebViewMessage}
+        onNavigationStateChange={(navState) => {
+          const url = navState.url;
+          if (url.includes('close.html') || url.includes('/close') || url.includes('static/close')) {
+            const isHost = roomData?.userId === user?.id;
+            if (isHost) {
+              setShowLeaveOptionsModal(true);
+            } else {
+              handleLeave();
+            }
+          }
+        }}
+        onShouldStartLoadWithRequest={(request) => {
+          const url = request.url;
+          if (url.includes('close.html') || url.includes('/close') || url.includes('static/close')) {
+            const isHost = roomData?.userId === user?.id;
+            if (isHost) {
+              setShowLeaveOptionsModal(true);
+            } else {
+              handleLeave();
+            }
+            return false;
+          }
+          return true;
+        }}
       />
 
-      {/* Host Control Actions */}
-      <View style={[styles.controlsRow, { backgroundColor: colors.bgCard, borderTopColor: colors.border }]}>
-        <TouchableOpacity style={[styles.controlBtn, { backgroundColor: colors.accentRed }]} onPress={handleLeaveClick}>
-          <LogOut size={20} color="#fff" />
-          <Text style={styles.controlText}>Leave</Text>
-        </TouchableOpacity>
-
-        {user?.id === roomData?.userId && roomData?.isConsultation && (
-          <TouchableOpacity style={[styles.controlBtn, { backgroundColor: colors.primary }]} onPress={() => setShowExtendMenu(true)}>
-            <Plus size={20} color="#fff" />
-            <Text style={styles.controlText}>Extend</Text>
-          </TouchableOpacity>
-        )}
-
-        {user?.id === roomData?.userId && knockingGuests.length > 0 && (
+      {/* Host Control Actions (Knock button ONLY - Leave is handled inside Jitsi) */}
+      {user?.id === roomData?.userId && knockingGuests.length > 0 && (
+        <View style={[styles.controlsRow, { backgroundColor: colors.bgCard, borderTopColor: colors.border }]}>
           <TouchableOpacity style={[styles.controlBtn, { backgroundColor: colors.gold }]} onPress={() => Alert.alert('Guests Waiting', `${knockingGuests.length} users are knocking to enter.`)}>
             <Users size={20} color="#fff" />
             <Text style={styles.controlText}>Knock ({knockingGuests.length})</Text>
           </TouchableOpacity>
-        )}
-      </View>
+        </View>
+      )}
 
       {/* Host admit knocking guest overlay modal */}
       {user?.id === roomData?.userId && knockingGuests.length > 0 && (
@@ -491,12 +483,30 @@ export default function MeetingRoomScreen({ navigate, params }) {
 
       {/* Warnings */}
       {warningPopup !== null && (
-        <View style={[styles.warningBox, { backgroundColor: colors.accentRed }]}>
-          <ShieldAlert size={20} color="#fff" />
-          <Text style={styles.warningText}>Consultation ends in {warningPopup / 60}m!</Text>
-          <TouchableOpacity onPress={() => setWarningPopup(null)}>
-            <X size={16} color="#fff" />
-          </TouchableOpacity>
+        <View style={[styles.warningBox, { backgroundColor: colors.accentRed, flexDirection: 'column', alignItems: 'stretch' }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, marginBottom: 8 }}>
+            <ShieldAlert size={20} color="#fff" />
+            <Text style={{ color: '#fff', fontSize: 13, fontWeight: '700', flex: 1 }}>
+              Consultation ends in {warningPopup >= 60 ? `${warningPopup / 60}m` : `${warningPopup}s`}!
+            </Text>
+          </View>
+          <View style={{ flexDirection: 'row', justifyContent: 'flex-end', gap: 10 }}>
+            <TouchableOpacity 
+              style={{ backgroundColor: 'rgba(255,255,255,0.2)', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 }} 
+              onPress={() => setWarningPopup(null)}
+            >
+              <Text style={{ color: '#fff', fontSize: 12, fontWeight: '600' }}>Ignore</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={{ backgroundColor: '#fff', paddingHorizontal: 16, paddingVertical: 8, borderRadius: 8 }} 
+              onPress={() => {
+                setWarningPopup(null);
+                setShowExtendMenu(true);
+              }}
+            >
+              <Text style={{ color: colors.accentRed, fontSize: 12, fontWeight: '700' }}>Extend</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       )}
 
@@ -518,9 +528,52 @@ export default function MeetingRoomScreen({ navigate, params }) {
               <Text style={[styles.sheetBtnText, { color: colors.primary }]}>+ 30 Minutes</Text>
             </TouchableOpacity>
 
+            <TouchableOpacity style={[styles.sheetBtn, { backgroundColor: colors.primaryLight }]} onPress={() => handleExtend(60)}>
+              <Text style={[styles.sheetBtnText, { color: colors.primary }]}>+ 1 Hour (60 Min)</Text>
+            </TouchableOpacity>
+
             <TouchableOpacity style={[styles.sheetCloseBtn, { borderColor: colors.border }]} onPress={() => setShowExtendMenu(false)}>
               <Text style={[styles.sheetCloseText, { color: colors.text }]}>Cancel</Text>
             </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Leave meeting choices modal for Host (Image 3 layout) */}
+      <Modal animationType="fade" transparent={true} visible={showLeaveOptionsModal} onRequestClose={() => { setShowLeaveOptionsModal(false); setJitsiKey(k => k + 1); }}>
+        <View style={{ flex: 1, backgroundColor: 'rgba(0,0,0,0.75)', justifyContent: 'center', alignItems: 'center', padding: 20 }}>
+          <View style={{ backgroundColor: '#181829', borderColor: '#27273e', borderWidth: 1, borderRadius: 24, padding: 24, width: '100%', maxWidth: 360, shadowColor: '#000', shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 20, elevation: 10 }}>
+            {/* Header */}
+            <View style={{ flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 12 }}>
+              <Text style={{ color: '#fff', fontSize: 18, fontWeight: '700' }}>Leave Meeting</Text>
+              <TouchableOpacity onPress={() => { setShowLeaveOptionsModal(false); setJitsiKey(k => k + 1); }}>
+                <X size={20} color="#8e8d9a" />
+              </TouchableOpacity>
+            </View>
+            
+            {/* Subtitle */}
+            <Text style={{ color: '#8e8d9a', fontSize: 14, lineHeight: 20, marginBottom: 24 }}>
+              Do you want to just leave the meeting, or end it for everyone?
+            </Text>
+            
+            {/* Actions */}
+            <View style={{ gap: 12 }}>
+              <TouchableOpacity 
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#2a2a40', height: 50, borderRadius: 14 }}
+                onPress={handleLeave}
+              >
+                <LogOut size={16} color="#fff" />
+                <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600' }}>Just Leave</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#ea4335', height: 50, borderRadius: 14 }}
+                onPress={handleEndMeetingForAll}
+              >
+                <Users size={16} color="#fff" />
+                <Text style={{ color: '#fff', fontSize: 15, fontWeight: '600' }}>End for all</Text>
+              </TouchableOpacity>
+            </View>
           </View>
         </View>
       </Modal>
@@ -739,7 +792,7 @@ const styles = StyleSheet.create({
   endDesc: {
     fontSize: 13,
     textAlign: 'center',
-    lineHeight: 1.8,
+    lineHeight: 22,
   },
   endBtn: {
     height: 44,
@@ -762,7 +815,7 @@ const styles = StyleSheet.create({
     fontSize: 13,
     textAlign: 'center',
     marginTop: 8,
-    lineHeight: 1.8,
+    lineHeight: 22,
     maxWidth: 260,
   },
   cancelBtn: {
@@ -858,7 +911,7 @@ const styles = StyleSheet.create({
   postScreenDesc: {
     fontSize: 13,
     textAlign: 'center',
-    lineHeight: 1.8,
+    lineHeight: 20,
     marginBottom: 12,
   },
   postScreenCountdown: {

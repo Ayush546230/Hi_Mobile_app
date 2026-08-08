@@ -75,7 +75,7 @@ export default function PushApprovePage() {
                 Login Request
               </h2>
               <p style={{ fontSize: 14, color: 'var(--ink-soft)', lineHeight: 1.7, maxWidth: 320 }}>
-                Someone is trying to sign in to your <strong style={{ color: 'var(--ink)' }}>AuthCraft</strong> account.
+                Someone is trying to sign in to your <strong style={{ color: 'var(--ink)' }}>Hi</strong> account.
                 Do you want to allow this?
               </p>
 

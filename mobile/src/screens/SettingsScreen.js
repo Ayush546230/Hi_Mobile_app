@@ -3,6 +3,7 @@ import {
   StyleSheet, Text, View, TextInput, TouchableOpacity,
   ScrollView, Switch, Alert, ActivityIndicator, Image
 } from 'react-native';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../context/AuthContext';
 import { useMeetings } from '../context/MeetingContext';
 import { useTheme } from '../context/ThemeContext';
@@ -70,6 +71,43 @@ export default function SettingsScreen({ navigate }) {
     } finally { setSavingPrefs(false); }
   };
 
+  const handleChangeAvatar = async () => {
+    try {
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert('Permission Denied', 'Please allow access to your photo library to change your avatar.');
+        return;
+      }
+
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [1, 1],
+        quality: 0.6,
+        base64: true,
+      });
+
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        const selectedAsset = result.assets[0];
+        if (selectedAsset.base64) {
+          const mimeType = selectedAsset.mimeType || 'image/jpeg';
+          const base64Data = `data:${mimeType};base64,${selectedAsset.base64}`;
+
+          setSavingProfile(true);
+          await updateProfile({ displayName: dispName, avatar: base64Data });
+          Alert.alert('Success', 'Avatar updated successfully!');
+        } else {
+          Alert.alert('Error', 'Failed to retrieve image base64 data.');
+        }
+      }
+    } catch (err) {
+      console.error('Error changing avatar:', err);
+      Alert.alert('Error', 'Failed to change avatar: ' + err.message);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
   const handleTogglePushAuth = async (wantsPush) => {
     setPushEnabled(wantsPush);
     try {
@@ -97,7 +135,7 @@ export default function SettingsScreen({ navigate }) {
   const c = colors;
 
   const Section = ({ title, children }) => (
-    <View style={[styles.section, { backgroundColor: c.bgCard, borderColor: c.border }]}>
+    <View style={{ marginBottom: 8 }}>
       <Text style={[styles.sectionTitle, { color: c.text, borderBottomColor: c.border }]}>{title}</Text>
       {children}
     </View>
@@ -132,14 +170,17 @@ export default function SettingsScreen({ navigate }) {
           {/* Avatar */}
           <View style={styles.avatarRow}>
             <View style={[styles.avatarCircle, { backgroundColor: c.primary }]}>
-              {user?.avatar ? (
-                <Image source={{ uri: user.avatar }} style={styles.avatarImg} />
+              {userProfile?.avatar ? (
+                <Image source={{ uri: userProfile.avatar }} style={styles.avatarImg} />
               ) : (
                 <Text style={styles.avatarText}>{userProfile?.initials || 'U'}</Text>
               )}
             </View>
             <View>
-              <TouchableOpacity style={[styles.changeAvatarBtn, { backgroundColor: c.bgHover, borderColor: c.border }]}>
+              <TouchableOpacity 
+                style={[styles.changeAvatarBtn, { backgroundColor: c.bgHover, borderColor: c.border }]}
+                onPress={handleChangeAvatar}
+              >
                 <Text style={[styles.changeAvatarText, { color: c.text }]}>Change Avatar</Text>
               </TouchableOpacity>
               <Text style={[styles.avatarHint, { color: c.textMuted }]}>JPG, GIF or PNG. Max size 2MB.</Text>
@@ -255,60 +296,6 @@ export default function SettingsScreen({ navigate }) {
 
 
 
-        {/* ─── Sign Out ─── */}
-        <TouchableOpacity
-          style={[styles.signOutBtn, { borderColor: c.accentRed + '44' }]}
-          onPress={async () => {
-            await logout();
-            navigate('Login');
-          }}
-        >
-          <Text style={[styles.signOutText, { color: c.accentRed }]}>Sign Out</Text>
-        </TouchableOpacity>
-
-        {/* Hidden Developer Mode URL Settings */}
-        {showDevInput && (
-          <View style={[styles.section, { backgroundColor: c.bgCard, borderColor: c.border, marginTop: 10 }]}>
-            <Text style={[styles.sectionTitle, { color: c.text, borderBottomColor: c.border }]}>🛠️ Backend API Host</Text>
-            <Text style={[styles.fieldLabel, { color: c.textSecondary }]}>Base API URL</Text>
-            <TextInput
-              style={[styles.fieldInput, { color: c.text, borderColor: c.border, backgroundColor: c.bg }]}
-              value={tempUrl}
-              onChangeText={setTempUrl}
-              autoCapitalize="none"
-              placeholder="https://your-localtunnel-link.loca.lt/api"
-              placeholderTextColor={c.textMuted}
-            />
-            <View style={{ flexDirection: 'row', gap: 10 }}>
-              <TouchableOpacity
-                style={[styles.btnPrimary, { backgroundColor: c.primary, flex: 2 }]}
-                onPress={async () => {
-                  try {
-                    await updateBackendHost(tempUrl);
-                    setShowDevInput(false);
-                    Alert.alert('Success', 'API Host updated successfully!');
-                  } catch (e) {
-                    Alert.alert('Error', 'Failed to save host: ' + e.message);
-                  }
-                }}
-              >
-                <Text style={styles.btnPrimaryText}>Save & Update</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.btnPrimary, { backgroundColor: c.bgHover, borderColor: c.border, borderWidth: 1, flex: 1 }]}
-                onPress={() => setShowDevInput(false)}
-              >
-                <Text style={[styles.btnPrimaryText, { color: c.text }]}>Cancel</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-        )}
-
-        {/* Branding */}
-        <TouchableOpacity style={styles.footerBranding} onPress={handleLogoTap} activeOpacity={0.8}>
-          <Image source={poweredByLogo} style={styles.footerLogo} resizeMode="contain" />
-        </TouchableOpacity>
-
       </ScrollView>
     </View>
   );
@@ -321,9 +308,9 @@ const styles = StyleSheet.create({
   pageTitle: { fontSize: 26, fontWeight: '700', marginBottom: 4 },
   pageSubtitle: { fontSize: 14, lineHeight: 20, marginBottom: 8 },
 
-  section: { borderWidth: 1, borderRadius: 20, padding: 18, gap: 0 },
+  section: { marginBottom: 8 },
   sectionTitle: {
-    fontSize: 15, fontWeight: '700', letterSpacing: 0.3,
+    fontSize: 18, fontWeight: '700', letterSpacing: 0.3,
     marginBottom: 16, paddingBottom: 12, borderBottomWidth: StyleSheet.hairlineWidth,
   },
 

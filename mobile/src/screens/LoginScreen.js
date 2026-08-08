@@ -1,5 +1,7 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, Image, ActivityIndicator, Alert, ScrollView, TouchableOpacity, Dimensions, TextInput } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import io from 'socket.io-client';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
 import { KeyRound } from 'lucide-react-native';
@@ -80,12 +82,33 @@ function ImageCarousel() {
 
 export default function LoginScreen({ navigate }) {
   const { colors } = useTheme();
-  const { devEmailLogin, loginWithGoogle, loginWithPasskey, registerPasskey } = useAuth();
+  const { 
+    devEmailLogin, 
+    loginWithGoogle, 
+    loginWithPasskey, 
+    registerPasskey, 
+    enablePushAuth,
+    apiUrl,
+    initiatePushLogin,
+    saveSession
+  } = useAuth();
   
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const [passkeyLoading, setPasskeyLoading] = useState(false);
+  const [singleClickLoading, setSingleClickLoading] = useState(false);
+  const [countdown, setCountdown] = useState(120);
   const [error, setError] = useState('');
+
+  const socketRef = useRef(null);
+  const timerRef = useRef(null);
+
+  useEffect(() => {
+    return () => {
+      if (socketRef.current) socketRef.current.disconnect();
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
 
   useEffect(() => {
     try {
@@ -97,6 +120,40 @@ export default function LoginScreen({ navigate }) {
       console.log('GoogleSignin init warning:', e.message);
     }
   }, [GOOGLE_CLIENT_ID]);
+
+  const promptSingleClickLogin = () => {
+    Alert.alert(
+      'Register for Single Click Login?',
+      'Enable Single Click Login to approve desktop web sign-ins directly from this device.',
+      [
+        { text: 'Skip', style: 'cancel', onPress: () => navigate('Dashboard') },
+        {
+          text: 'Allow',
+          style: 'default',
+          onPress: async () => {
+            try {
+              setLoading(true);
+              await enablePushAuth();
+              Alert.alert('Registered', 'This device has been registered as a Single Click Login helper!');
+            } catch (err) {
+              Alert.alert('Failed', err.message || 'Failed to register device for push login.');
+            } finally {
+              setLoading(false);
+              navigate('Dashboard');
+            }
+          }
+        }
+      ]
+    );
+  };
+
+  const checkRemainingSetup = (u) => {
+    if (!u.authMethods?.push) {
+      promptSingleClickLogin();
+    } else {
+      navigate('Dashboard');
+    }
+  };
 
   const handleGoogleSignIn = async () => {
     setError('');
@@ -111,13 +168,17 @@ export default function LoginScreen({ navigate }) {
 
       const loggedUser = await loginWithGoogle(idToken);
 
+      if (loggedUser?.email) {
+        await AsyncStorage.setItem('saved_email', loggedUser.email);
+      }
+
       // Prompt for passkey creation if they don't have one
       if (!loggedUser.authMethods?.passkey) {
         Alert.alert(
           'Create a Passkey?',
           'Set up a passkey to sign in faster next time using your fingerprint, face recognition, or device PIN.',
           [
-            { text: 'Skip for now', style: 'cancel', onPress: () => navigate('Dashboard') },
+            { text: 'Skip for now', style: 'cancel', onPress: () => checkRemainingSetup(loggedUser) },
             {
               text: 'Yes, create passkey',
               style: 'default',
@@ -130,14 +191,14 @@ export default function LoginScreen({ navigate }) {
                   Alert.alert('Error', err.message || 'Failed to create passkey');
                 } finally {
                   setLoading(false);
-                  navigate('Dashboard');
+                  checkRemainingSetup(loggedUser);
                 }
               }
             },
           ]
         );
       } else {
-        navigate('Dashboard');
+        checkRemainingSetup(loggedUser);
       }
     } catch (err) {
       console.log('Google Sign-in error:', err);
@@ -161,12 +222,87 @@ export default function LoginScreen({ navigate }) {
     }
   };
 
-  const handleSingleClickAlert = () => {
-    Alert.alert(
-      'Single Click Login',
-      'Single Click (Push) login allows you to approve desktop web sign-ins directly from this device. Please log in first using Google or Passkey, then register this device in Settings.',
-      [{ text: 'Got it' }]
-    );
+  const handleSingleClickLogin = async () => {
+    setError('');
+    
+    try {
+      // 1. Get saved email
+      const savedEmail = await AsyncStorage.getItem('saved_email');
+      if (!savedEmail) {
+        Alert.alert(
+          'Setup Required',
+          'Please sign in with Google first to register this device for Single Click Login.',
+          [{ text: 'Got it' }]
+        );
+        return;
+      }
+
+      setSingleClickLoading(true);
+      setCountdown(120);
+
+      // 2. Initiate push login
+      const res = await initiatePushLogin({ email: savedEmail });
+      const reqId = res.requestId;
+
+      // 3. Connect Socket
+      const socketUrl = apiUrl.replace(/\/api$/, '');
+      const socket = io(socketUrl, { transports: ['websocket'] });
+      socketRef.current = socket;
+
+      socket.emit('join-push-room', reqId);
+
+      socket.on('push-login-response', async (data) => {
+        if (data.status === 'approved') {
+          // Cleanup socket and timer
+          if (timerRef.current) clearInterval(timerRef.current);
+          socket.disconnect();
+          socketRef.current = null;
+          setSingleClickLoading(false);
+
+          // Save session & navigate
+          await saveSession(data.token, data.user);
+          navigate('Dashboard');
+        } else if (data.status === 'denied') {
+          if (timerRef.current) clearInterval(timerRef.current);
+          socket.disconnect();
+          socketRef.current = null;
+          setSingleClickLoading(false);
+          Alert.alert('Denied', 'Login request was denied.');
+        }
+      });
+
+      // 4. Start countdown timer
+      if (timerRef.current) clearInterval(timerRef.current);
+      timerRef.current = setInterval(() => {
+        setCountdown(prev => {
+          if (prev <= 1) {
+            clearInterval(timerRef.current);
+            if (socketRef.current) {
+              socketRef.current.disconnect();
+              socketRef.current = null;
+            }
+            setSingleClickLoading(false);
+            Alert.alert('Expired', 'The login request timed out. Please try again.');
+            return 0;
+          }
+          return prev - 1;
+        });
+      }, 1000);
+
+    } catch (err) {
+      console.log('Single Click login error:', err);
+      setError(err?.response?.data?.error || err?.message || 'Failed to initiate Single Click Login.');
+      setSingleClickLoading(false);
+    }
+  };
+
+  const handleCancelSingleClick = () => {
+    if (timerRef.current) clearInterval(timerRef.current);
+    if (socketRef.current) {
+      socketRef.current.disconnect();
+      socketRef.current = null;
+    }
+    setSingleClickLoading(false);
   };
 
   return (
@@ -230,12 +366,26 @@ export default function LoginScreen({ navigate }) {
         </View>
 
         {/* Single Click Login Button */}
-        <TouchableOpacity 
-          style={[styles.btn, { backgroundColor: '#6C63FF' }]}
-          onPress={handleSingleClickAlert}
-        >
-          <Text style={[styles.btnText, { color: '#fff' }]}>Login with Single Click</Text>
-        </TouchableOpacity>
+        {singleClickLoading ? (
+          <View style={{ alignItems: 'center', marginVertical: 8, width: '100%' }}>
+            <ActivityIndicator size="small" color="#6C63FF" style={{ marginBottom: 8 }} />
+            <Text style={{ color: '#8e8d9a', fontSize: 13, textAlign: 'center', marginBottom: 6 }}>
+              Waiting for approval on this device... ({countdown}s)
+            </Text>
+            <TouchableOpacity onPress={handleCancelSingleClick}>
+              <Text style={{ color: '#6C63FF', fontSize: 13, textDecorationLine: 'underline' }}>Cancel</Text>
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <TouchableOpacity 
+            style={[styles.btn, { backgroundColor: '#6C63FF' }]}
+            onPress={handleSingleClickLogin}
+          >
+            <Text style={[styles.btnText, { color: '#fff' }]}>Login with Single Click</Text>
+          </TouchableOpacity>
+        )}
+
+
       </View>
     </ScrollView>
   );

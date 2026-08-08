@@ -61,15 +61,20 @@ export default function HistoryScreen({ navigate }) {
 
   const filteredMeetings = meetingHistory.filter(m => {
     const s = search.toLowerCase();
+    const titleVal = m.title || '';
+    const descVal = m.description || '';
+    const roomVal = m.roomName || '';
     return (
-      m.title.toLowerCase().includes(s) ||
-      (m.description && m.description.toLowerCase().includes(s)) ||
-      m.roomName.toLowerCase().includes(s)
+      titleVal.toLowerCase().includes(s) ||
+      descVal.toLowerCase().includes(s) ||
+      roomVal.toLowerCase().includes(s)
     );
   });
 
   const getRelativeText = (dateString) => {
+    if (!dateString) return 'unknown';
     const date = new Date(dateString);
+    if (isNaN(date.getTime())) return 'unknown';
     const diffMs = Date.now() - date.getTime();
     const diffMins = Math.floor(diffMs / 60000);
     const diffHours = Math.floor(diffMins / 60);

@@ -1,5 +1,5 @@
 import React, { useState, useRef } from 'react';
-import { SafeAreaView, StatusBar, StyleSheet, View, Text, ActivityIndicator, Image, TouchableOpacity, Dimensions, Animated, Modal } from 'react-native';
+import { SafeAreaView, StatusBar, StyleSheet, View, Text, ActivityIndicator, Image, TouchableOpacity, Dimensions, Animated, Modal, ScrollView, Linking } from 'react-native';
 import { ThemeProvider, useTheme } from './src/context/ThemeContext';
 import { AuthProvider, useAuth } from './src/context/AuthContext';
 import { MeetingProvider } from './src/context/MeetingContext';
@@ -36,6 +36,7 @@ function MainApp() {
   const [screenParams, setScreenParams] = useState({});
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [showHelp, setShowHelp] = useState(false);
+  const [pendingMeetingRoom, setPendingMeetingRoom] = useState(null);
 
   const navigate = (screenName, params = {}) => {
     setCurrentScreen(screenName);
@@ -46,29 +47,85 @@ function MainApp() {
 
   // Redirect to PushApprove when user taps on push notifications
   React.useEffect(() => {
-    const unsubscribe = notifee.onForegroundEvent(({ type, detail }) => {
-      if (type === EventType.PRESS && detail.notification?.data) {
-        const { requestId, token } = detail.notification.data;
-        if (requestId && token) {
-          navigate('PushApprove', { requestId, token });
-        }
+    let unsubscribe;
+    try {
+      if (notifee && typeof notifee.onForegroundEvent === 'function') {
+        unsubscribe = notifee.onForegroundEvent(({ type, detail }) => {
+          if (type === EventType.PRESS && detail.notification?.data) {
+            const { requestId, token } = detail.notification.data;
+            if (requestId && token) {
+              navigate('PushApprove', { requestId, token });
+            }
+          }
+        });
       }
-    });
-    return unsubscribe;
+    } catch (err) {
+      console.log('Notifee foreground event subscription skipped:', err.message);
+    }
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, []);
+
+  // Handle Deep Linking / Universal Links (Google Meet link behavior)
+  React.useEffect(() => {
+    const handleDeepLink = (event) => {
+      if (event.url) {
+        parseAndNavigateUrl(event.url);
+      }
+    };
+
+    const parseAndNavigateUrl = (url) => {
+      try {
+        const route = url.replace(/.*?:\/\//g, '');
+        const parts = route.split('/');
+        const meetingIndex = parts.indexOf('meeting');
+        if (meetingIndex !== -1 && parts[meetingIndex + 1]) {
+          const room = parts[meetingIndex + 1];
+          if (room) {
+            if (user) {
+              navigate('MeetingRoom', { roomName: room });
+            } else {
+              setPendingMeetingRoom(room);
+            }
+          }
+        }
+      } catch (err) {
+        console.log('Error parsing deep link:', err);
+      }
+    };
+
+    // Check if app was opened from a link
+    Linking.getInitialURL()
+      .then((url) => {
+        if (url) parseAndNavigateUrl(url);
+      })
+      .catch((err) => console.log('Linking.getInitialURL error:', err));
+
+    // Listen for incoming links while running
+    const subscription = Linking.addEventListener('url', handleDeepLink);
+    return () => {
+      if (subscription && typeof subscription.remove === 'function') {
+        subscription.remove();
+      }
+    };
+  }, [user]);
 
   // Automatically route user based on Auth state changes
   React.useEffect(() => {
     if (!loading) {
       if (user) {
-        if (currentScreen === 'Login') {
+        if (pendingMeetingRoom) {
+          navigate('MeetingRoom', { roomName: pendingMeetingRoom });
+          setPendingMeetingRoom(null);
+        } else if (currentScreen === 'Login') {
           setCurrentScreen('Dashboard');
         }
       } else {
         setCurrentScreen('Login');
       }
     }
-  }, [user, loading]);
+  }, [user, loading, pendingMeetingRoom]);
 
   if (loading) {
     return <FullPageLoader text="Loading…" />;

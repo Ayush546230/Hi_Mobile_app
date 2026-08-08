@@ -26,7 +26,7 @@ export function MeetingProvider({ children }) {
   const [userPreferences, setUserPreferences] = useState(DEFAULT_PREFERENCES);
   const [loading, setLoading] = useState(true);
   
-  const { user, API, socket } = useAuth();
+  const { user, API, socket, setUser } = useAuth();
 
   // Fetch upcoming meetings
   const refreshUpcomingMeetings = useCallback(async () => {
@@ -174,7 +174,7 @@ export function MeetingProvider({ children }) {
       createdAt: m.createdAt,
       duration: m.duration,
     };
-    setUpcomingMeetings((prev) => [meeting, ...prev]);
+    setUpcomingMeetings((prev) => [...prev]);
     return meeting;
   }, [API]);
 
@@ -265,21 +265,33 @@ export function MeetingProvider({ children }) {
     try {
       const res = await API.put('/users/profile', {
         displayName: profile.displayName,
+        avatar: profile.avatar,
       });
-      setUserProfile((prev) => ({
-        ...prev,
-        displayName: res.data.user.preferences?.displayName || res.data.user.name,
-      }));
+      const updatedUser = res.data.user;
+      setUser(updatedUser);
+      setUserProfile({
+        id: updatedUser._id || updatedUser.id,
+        displayName: updatedUser.preferences?.displayName || updatedUser.name || 'User',
+        email: updatedUser.email,
+        avatar: updatedUser.avatar || '',
+        initials: (updatedUser.preferences?.displayName || updatedUser.name || 'U')
+          .split(' ')
+          .map((n) => n[0])
+          .join('')
+          .toUpperCase()
+          .slice(0, 2),
+      });
     } catch (err) {
       console.error('Error updating profile:', err);
+      throw err;
     }
-  }, [API]);
+  }, [API, setUser]);
 
   // Update preferences
   const updatePreferences = useCallback(async (prefs) => {
     try {
       const res = await API.put('/users/preferences', prefs);
-      const updatedPrefs = res.data.user.preferences;
+      const updatedPrefs = res.data.preferences;
       setUserPreferences({
         micDefault: updatedPrefs.micDefault,
         speakerDefault: updatedPrefs.speakerDefault,
@@ -288,10 +300,19 @@ export function MeetingProvider({ children }) {
         soundEffects: updatedPrefs.soundEffects,
         timezone: updatedPrefs.timezone,
       });
+      // Keep AuthContext user preferences in sync
+      setUser((prev) => {
+        if (!prev) return prev;
+        return {
+          ...prev,
+          preferences: updatedPrefs,
+        };
+      });
     } catch (err) {
       console.error('Error updating preferences:', err);
+      throw err;
     }
-  }, [API]);
+  }, [API, setUser]);
 
   // Send email invitations
   const sendInvites = useCallback(async (meetingId, emails) => {

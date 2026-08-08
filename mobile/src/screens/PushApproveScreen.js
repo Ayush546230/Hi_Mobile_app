@@ -151,7 +151,7 @@ export default function PushApproveScreen({ navigate, params }) {
             </View>
             <Text style={[styles.title, { color: colors.text }]}>Login Request</Text>
             <Text style={[styles.desc, { color: colors.textSecondary }]}>
-              Someone is trying to sign in to your <Text style={{ fontWeight: '700', color: colors.text }}>AuthCraft</Text> account. Do you want to allow this?
+              Someone is trying to sign in to your <Text style={{ fontWeight: '700', color: colors.text }}>Hi</Text> account. Do you want to allow this?
             </Text>
 
             <View style={[styles.timerBox, { backgroundColor: colors.bg }]}>

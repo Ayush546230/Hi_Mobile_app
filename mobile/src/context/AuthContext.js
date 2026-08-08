@@ -5,6 +5,7 @@ import { io } from 'socket.io-client';
 import notifee, { AndroidImportance, EventType } from '@notifee/react-native';
 import * as Passkeys from 'react-native-passkeys';
 import messaging from '@react-native-firebase/messaging';
+import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 const AuthContext = createContext(null);
 
@@ -149,15 +150,26 @@ export function AuthProvider({ children }) {
   const logout = useCallback(async () => {
     loggingOut.current = true;
     try {
-      await API.delete('/push-auth/register-token');
+      // Keep FCM token registered to allow push notifications when logged out
+      // await API.delete('/push-auth/register-token');
     } catch (err) {
       console.log('FCM token unregistration failed:', err.message);
+    }
+    try {
+      // Explicitly sign out from Google to prompt the account chooser next time
+      GoogleSignin.configure({
+        webClientId: '778684435806-paa3crjb147a24meuj19em8jir66b2tf.apps.googleusercontent.com',
+        offlineAccess: true,
+      });
+      await GoogleSignin.signOut();
+    } catch (err) {
+      console.log('Google sign-out failed during app logout:', err.message);
     }
     await AsyncStorage.removeItem('auth_token');
     setUser(null);
     hasSetupFirebase.current = false;
     setTimeout(() => { loggingOut.current = false; }, 500);
-  }, [API]);
+  }, []);
 
   // devEmailLogin
   const devEmailLogin = useCallback(async (email, name) => {
@@ -284,56 +296,102 @@ export function AuthProvider({ children }) {
 
   // Foreground Notification Handler (Notifee)
   useEffect(() => {
-    const unsubscribe = messaging().onMessage(async remoteMessage => {
-      await notifee.requestPermission();
-      const channelId = await notifee.createChannel({
-        id: 'auth_requests',
-        name: 'Login Requests',
-        importance: AndroidImportance.HIGH,
-      });
-
-      if (remoteMessage.data?.type === 'push_login') {
-        const { requestId, token } = remoteMessage.data;
-        await notifee.displayNotification({
-          title: remoteMessage.notification?.title || "Login Request",
-          body: remoteMessage.notification?.body || "Approve this login attempt?",
-          data: { requestId, token },
-          android: {
-            channelId,
-            importance: AndroidImportance.HIGH,
-            actions: [
-              { title: 'Deny', pressAction: { id: 'deny' } },
-              { title: 'Approve', pressAction: { id: 'approve' } },
-            ],
-          },
+    async function setupChannels() {
+      try {
+        await notifee.createChannel({
+          id: 'meeting_reminders',
+          name: 'Meeting Reminders',
+          importance: AndroidImportance.HIGH,
+          sound: 'default',
         });
-      } else {
-        await notifee.displayNotification({
-          title: remoteMessage.notification?.title || "Notification",
-          body: remoteMessage.notification?.body,
-          android: { channelId, importance: AndroidImportance.HIGH },
+        await notifee.createChannel({
+          id: 'meeting_reminders_silent',
+          name: 'Meeting Reminders (Silent)',
+          importance: AndroidImportance.DEFAULT,
+          sound: undefined,
         });
+      } catch (err) {
+        console.log('Error creating default channels:', err.message);
       }
-    });
-    return unsubscribe;
-  }, []);
+    }
+    setupChannels();
+
+    let unsubscribe;
+    try {
+      unsubscribe = messaging().onMessage(async remoteMessage => {
+        try {
+          await notifee.requestPermission();
+          
+          const hasSounds = user?.preferences?.soundEffects !== false;
+          const channelId = await notifee.createChannel({
+            id: hasSounds ? 'auth_requests' : 'auth_requests_silent',
+            name: hasSounds ? 'Login Requests' : 'Login Requests (Silent)',
+            importance: AndroidImportance.HIGH,
+            sound: hasSounds ? 'default' : undefined,
+          });
+
+          if (remoteMessage.data?.type === 'push_login') {
+            const { requestId, token } = remoteMessage.data;
+            await notifee.displayNotification({
+              title: remoteMessage.notification?.title || "Login Request",
+              body: remoteMessage.notification?.body || "Approve this login attempt?",
+              data: { requestId, token },
+              android: {
+                channelId,
+                importance: AndroidImportance.HIGH,
+                actions: [
+                  { title: 'Deny', pressAction: { id: 'deny' } },
+                  { title: 'Approve', pressAction: { id: 'approve' } },
+                ],
+              },
+            });
+          } else {
+            await notifee.displayNotification({
+              title: remoteMessage.notification?.title || "Notification",
+              body: remoteMessage.notification?.body,
+              android: { 
+                channelId, 
+                importance: hasSounds ? AndroidImportance.HIGH : AndroidImportance.DEFAULT 
+              },
+            });
+          }
+        } catch (e) {
+          console.log('Notifee execution failed inside onMessage:', e.message);
+        }
+      });
+    } catch (err) {
+      console.log('Firebase onMessage subscription skipped:', err.message);
+    }
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
+  }, [user]);
 
   // Foreground Action Handler
   useEffect(() => {
-    const unsubscribe = notifee.onForegroundEvent(({ type, detail }) => {
-      if (type === EventType.ACTION_PRESS && detail.notification?.data) {
-        const { requestId, token } = detail.notification.data;
-        if (detail.pressAction.id === 'approve') {
-          respondToPushLogin(requestId, token, 'approve');
-        } else if (detail.pressAction.id === 'deny') {
-          respondToPushLogin(requestId, token, 'deny');
-        }
-        if (detail.notification.id) {
-          notifee.cancelNotification(detail.notification.id);
-        }
+    let unsubscribe;
+    try {
+      if (notifee && typeof notifee.onForegroundEvent === 'function') {
+        unsubscribe = notifee.onForegroundEvent(({ type, detail }) => {
+          if (type === EventType.ACTION_PRESS && detail.notification?.data) {
+            const { requestId, token } = detail.notification.data;
+            if (detail.pressAction.id === 'approve') {
+              respondToPushLogin(requestId, token, 'approve');
+            } else if (detail.pressAction.id === 'deny') {
+              respondToPushLogin(requestId, token, 'deny');
+            }
+            if (detail.notification.id) {
+              notifee.cancelNotification(detail.notification.id);
+            }
+          }
+        });
       }
-    });
-    return unsubscribe;
+    } catch (err) {
+      console.log('Notifee onForegroundEvent subscription skipped:', err.message);
+    }
+    return () => {
+      if (unsubscribe) unsubscribe();
+    };
   }, [respondToPushLogin]);
 
   const value = useMemo(() => ({
@@ -350,8 +408,8 @@ export function AuthProvider({ children }) {
     initiatePushLogin,
     checkPushLoginStatus,
     respondToPushLogin,
-    enablePushAuth,
-    disablePushAuth,
+    saveSession,
+    setUser,
     logout
   }), [
     user,
@@ -369,6 +427,8 @@ export function AuthProvider({ children }) {
     respondToPushLogin,
     enablePushAuth,
     disablePushAuth,
+    saveSession,
+    setUser,
     logout
   ]);
 

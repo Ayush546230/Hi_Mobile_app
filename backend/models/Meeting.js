@@ -43,6 +43,7 @@ const meetingSchema = new mongoose.Schema(
       },
     },
     reminderSent: { type: Boolean, default: false },
+    inviteSent: { type: Boolean, default: false },
     hostJoined: { type: Boolean, default: false },
     isPrivate: { type: Boolean, default: false },
     isConsultation: { type: Boolean, default: false },
@@ -62,6 +63,7 @@ const meetingSchema = new mongoose.Schema(
 
 // Index for efficient reminder queries
 meetingSchema.index({ status: 1, reminderSent: 1, startTime: 1 });
+meetingSchema.index({ status: 1, inviteSent: 1, startTime: 1 });
 // Index for fast participant dashboard lookup
 meetingSchema.index({ 'participants.email': 1 });
 // Index for sorting and filtering upcoming/past meetings
