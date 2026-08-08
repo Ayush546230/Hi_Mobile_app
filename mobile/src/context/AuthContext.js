@@ -408,6 +408,8 @@ export function AuthProvider({ children }) {
     initiatePushLogin,
     checkPushLoginStatus,
     respondToPushLogin,
+    enablePushAuth,
+    disablePushAuth,
     saveSession,
     setUser,
     logout
