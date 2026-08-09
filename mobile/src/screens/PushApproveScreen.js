@@ -105,12 +105,6 @@ export default function PushApproveScreen({ navigate, params }) {
 
   return (
     <ScrollView contentContainerStyle={[styles.container, { backgroundColor: colors.bg }]}>
-      {/* Back to Dashboard header link */}
-      <TouchableOpacity style={styles.backRow} onPress={() => navigate('Dashboard')}>
-        <ArrowLeft size={16} color={colors.textSecondary} />
-        <Text style={[styles.backText, { color: colors.textSecondary }]}>Back to Dashboard</Text>
-      </TouchableOpacity>
-
       <View style={[styles.card, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
         
         {/* Input Paste Link view */}
