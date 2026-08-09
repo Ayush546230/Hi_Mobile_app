@@ -64,7 +64,7 @@ export function AuthProvider({ children }) {
     const response = await startRegistration(options);
 
     // Step 3: Verify with server
-    const verifyRes = await API.post('/passkeys/register/verify', { response, passkeyName });
+    const verifyRes = await API.post('/passkeys/register/verify', { response, passkeyName, challengeId: optRes.data.challengeId });
     saveSession(verifyRes.data.token, verifyRes.data.user);
     return verifyRes.data.user;
   }, [saveSession]);
@@ -81,7 +81,7 @@ export function AuthProvider({ children }) {
     const response = await startAuthentication(options);
 
     // Step 3: Verify
-    const verifyRes = await API.post('/passkeys/auth/verify', { response });
+    const verifyRes = await API.post('/passkeys/auth/verify', { response, challengeId: optRes.data.challengeId });
     saveSession(verifyRes.data.token, verifyRes.data.user);
     return verifyRes.data.user;
   }, [saveSession]);
@@ -92,7 +92,7 @@ export function AuthProvider({ children }) {
 
     const optRes = await API.post('/passkeys/auth/options', {});
     const response = await startAuthentication(optRes.data.options);
-    const verifyRes = await API.post('/passkeys/auth/verify', { response });
+    const verifyRes = await API.post('/passkeys/auth/verify', { response, challengeId: optRes.data.challengeId });
     saveSession(verifyRes.data.token, verifyRes.data.user);
     return verifyRes.data.user;
   }, [saveSession]);

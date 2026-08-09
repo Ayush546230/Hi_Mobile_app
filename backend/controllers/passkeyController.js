@@ -86,12 +86,21 @@ export const verifyRegister = async (req, res) => {
   try {
     const { response, passkeyName, challengeId } = req.body;
 
-    if (!challengeId) {
-      return res.status(400).json({ error: 'challengeId is required for mobile passkey verification' });
+    let challengeDoc = null;
+
+    if (challengeId) {
+      challengeDoc = await Challenge.findOne({ challengeId, type: 'registration' });
+    } else if (response && response.response && response.response.clientDataJSON) {
+      try {
+        const clientDataDecoded = Buffer.from(response.response.clientDataJSON, 'base64').toString('utf8');
+        const clientData = JSON.parse(clientDataDecoded);
+        const challengeVal = clientData.challenge;
+        challengeDoc = await Challenge.findOne({ challenge: challengeVal, type: 'registration' });
+      } catch (err) {
+        console.error('Error decoding clientDataJSON for registration verification:', err);
+      }
     }
 
-    // Retrieve challenge from database
-    const challengeDoc = await Challenge.findOne({ challengeId, type: 'registration' });
     if (!challengeDoc) {
       return res.status(400).json({ error: 'No registration challenge found or it has expired. Please try again.' });
     }
@@ -100,7 +109,7 @@ export const verifyRegister = async (req, res) => {
     const userId = challengeDoc.userId;
 
     // Delete used challenge
-    await Challenge.deleteOne({ challengeId });
+    await Challenge.deleteOne({ _id: challengeDoc._id });
 
     const user = await User.findById(userId);
     if (!user) {
@@ -243,12 +252,21 @@ export const verifyAuth = async (req, res) => {
   try {
     const { response, challengeId } = req.body;
 
-    if (!challengeId) {
-      return res.status(400).json({ error: 'challengeId is required for mobile passkey verification' });
+    let challengeDoc = null;
+
+    if (challengeId) {
+      challengeDoc = await Challenge.findOne({ challengeId, type: 'authentication' });
+    } else if (response && response.response && response.response.clientDataJSON) {
+      try {
+        const clientDataDecoded = Buffer.from(response.response.clientDataJSON, 'base64').toString('utf8');
+        const clientData = JSON.parse(clientDataDecoded);
+        const challengeVal = clientData.challenge;
+        challengeDoc = await Challenge.findOne({ challenge: challengeVal, type: 'authentication' });
+      } catch (err) {
+        console.error('Error decoding clientDataJSON for authentication verification:', err);
+      }
     }
 
-    // Retrieve challenge from database
-    const challengeDoc = await Challenge.findOne({ challengeId, type: 'authentication' });
     if (!challengeDoc) {
       return res.status(400).json({ error: 'No auth challenge found or it has expired. Please try again.' });
     }
@@ -257,7 +275,7 @@ export const verifyAuth = async (req, res) => {
     const challengeEmail = challengeDoc.email;
 
     // Delete used challenge
-    await Challenge.deleteOne({ challengeId });
+    await Challenge.deleteOne({ _id: challengeDoc._id });
 
     // Find user by credential ID (works for both email-based and discoverable)
     const credentialID = response.id;

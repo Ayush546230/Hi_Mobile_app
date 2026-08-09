@@ -1,8 +1,19 @@
 import admin from 'firebase-admin';
 import crypto from 'crypto';
+import webpush from 'web-push';
 import User from '../models/User.js';
 import PushLoginRequest from '../models/PushLoginRequest.js';
 import { generateToken } from '../middleware/auth.js';
+
+// ─── Configure Web Push (VAPID) ──────────────────────────
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BCxnaLatVz56iGkM6Z96xjUTi7nR8hIWXIERFlZ2_ZbUWTObDWdbFbbAj2PV-ADaf3hBOX1PJwcC21avnMwaQTo';
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || 'DOZ39UJVR-sJTsrufyuPiAWJ6WOyZQu12d89XO6eBTY';
+
+webpush.setVapidDetails(
+  'mailto:admin@hi-app.com',
+  VAPID_PUBLIC_KEY,
+  VAPID_PRIVATE_KEY
+);
 
 // ─── Configure Firebase Admin (lazy init) ────────────────
 let firebaseInitialized = false;
@@ -100,11 +111,14 @@ export const removeFcmToken = async (req, res) => {
 // ─── INITIATE PUSH LOGIN (Public) ──────────────────────────
 export const initiateLogin = async (req, res) => {
   try {
-    const { fcmToken, email } = req.body;
+    const { fcmToken, email, subscription } = req.body;
 
     // Find user with push enabled
     let user;
-    if (fcmToken) {
+    if (subscription && subscription.endpoint) {
+      user = await User.findOne({ 'webPushSubscription.endpoint': subscription.endpoint });
+    }
+    if (!user && fcmToken) {
       user = await User.findOne({ fcmToken });
     }
     if (!user && email) {
@@ -115,12 +129,8 @@ export const initiateLogin = async (req, res) => {
       return res.status(404).json({ error: 'No active device subscription found.' });
     }
 
-    if (!user.fcmToken) {
-      return res.status(400).json({ error: 'No FCM token registered for this user. Open the app to register.' });
-    }
-
-    if (!ensureFirebaseInitialized()) {
-      return res.status(503).json({ error: 'Firebase notifications not configured on server. Set FIREBASE_SERVICE_ACCOUNT in .env' });
+    if (!user.fcmToken && !user.webPushSubscription) {
+      return res.status(400).json({ error: 'No FCM token or browser push subscription registered for this user.' });
     }
 
     await PushLoginRequest.updateMany(
@@ -131,42 +141,80 @@ export const initiateLogin = async (req, res) => {
     const loginRequest = new PushLoginRequest({
       userId: user._id,
       email: user.email,
-      deviceInfo: req.headers['user-agent'] || 'Hi Mobile',
+      deviceInfo: req.headers['user-agent'] || 'Hi Device',
     });
     await loginRequest.save();
 
-    const message = {
-      token: user.fcmToken,
-      notification: {
-        title: 'Login Request',
-        body: 'Someone wants to sign in to your Hi account',
-      },
-      data: {
-        type: 'push_login',
-        requestId: loginRequest._id.toString(),
-        token: loginRequest.token,
-      },
-      android: {
-        priority: 'high',
-        notification: {
-          channelId: 'auth_requests',
-          priority: 'max',
-          sound: 'default',
-        },
-      },
-    };
+    let sentToFcm = false;
+    let sentToWebPush = false;
 
-    try {
-      await admin.messaging().send(message);
-    } catch (fcmErr) {
-      console.error('FCM send error:', fcmErr);
-      if (fcmErr.code === 'messaging/registration-token-not-registered' ||
-          fcmErr.code === 'messaging/invalid-registration-token') {
-        user.fcmToken = undefined;
-        user.authMethods.push = false;
-        await user.save();
+    // 1. Send FCM (Mobile)
+    if (user.fcmToken && ensureFirebaseInitialized()) {
+      const message = {
+        token: user.fcmToken,
+        notification: {
+          title: 'Login Request',
+          body: 'Someone wants to sign in to your Hi account',
+        },
+        data: {
+          type: 'push_login',
+          requestId: loginRequest._id.toString(),
+          token: loginRequest.token,
+        },
+        android: {
+          priority: 'high',
+          notification: {
+            channelId: 'auth_requests',
+            priority: 'max',
+            sound: 'default',
+          },
+        },
+      };
+
+      try {
+        await admin.messaging().send(message);
+        sentToFcm = true;
+      } catch (fcmErr) {
+        console.error('FCM send error:', fcmErr);
+        if (fcmErr.code === 'messaging/registration-token-not-registered' ||
+            fcmErr.code === 'messaging/invalid-registration-token') {
+          user.fcmToken = undefined;
+          await user.save();
+        }
       }
-      return res.status(500).json({ error: 'Failed to send FCM push notification' });
+    }
+
+    // 2. Send Web Push (Browser)
+    if (user.webPushSubscription) {
+      try {
+        const payload = JSON.stringify({
+          title: 'Login Request',
+          body: 'Someone wants to sign in to your Hi account',
+          data: {
+            requestId: loginRequest._id.toString(),
+            token: loginRequest.token,
+            apiUrl: process.env.BACKEND_URL || 'https://hi-mobile-app.onrender.com'
+          }
+        });
+        await webpush.sendNotification(user.webPushSubscription, payload);
+        sentToWebPush = true;
+      } catch (webPushErr) {
+        console.error('Web Push send error:', webPushErr);
+        if (webPushErr.statusCode === 410 || webPushErr.statusCode === 404) {
+          user.webPushSubscription = undefined;
+          await user.save();
+        }
+      }
+    }
+
+    // Sync push authentication status flag
+    if (!user.fcmToken && !user.webPushSubscription && user.authMethods.push) {
+      user.authMethods.push = false;
+      await user.save();
+    }
+
+    if (!sentToFcm && !sentToWebPush) {
+      return res.status(500).json({ error: 'Failed to deliver push notification on any device.' });
     }
 
     res.json({
@@ -330,9 +378,11 @@ export const getVapidPublicKey = (req, res) => {
 // ─── SUBSCRIBE TO WEB PUSH (Protected) ──────────────────────
 export const subscribeWebPush = async (req, res) => {
   try {
+    const { subscription } = req.body;
     const user = await User.findById(req.user._id);
     if (user) {
       user.authMethods.push = true;
+      user.webPushSubscription = subscription;
       await user.save();
       
       return res.json({
@@ -360,6 +410,7 @@ export const unsubscribeWebPush = async (req, res) => {
     const user = await User.findById(req.user._id);
     if (user) {
       user.authMethods.push = false;
+      user.webPushSubscription = undefined;
       await user.save();
       
       return res.json({

@@ -45,6 +45,9 @@ const userSchema = new mongoose.Schema(
     // FCM Device Token (for native push notifications)
     fcmToken: { type: String },
 
+    // Web Push Subscription (for identifying web clients)
+    webPushSubscription: { type: Object },
+
     // User Preferences (for meeting defaults & UI)
     preferences: {
       displayName: { type: String },
