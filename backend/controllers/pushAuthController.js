@@ -18,6 +18,9 @@ function ensureFirebaseInitialized() {
 
   try {
     const parsed = JSON.parse(serviceAccount);
+    if (parsed.private_key) {
+      parsed.private_key = parsed.private_key.replace(/\\n/g, '\n');
+    }
     admin.initializeApp({
       credential: admin.credential.cert(parsed),
     });
