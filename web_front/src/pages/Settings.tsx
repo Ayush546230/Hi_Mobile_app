@@ -79,6 +79,11 @@ export default function Settings() {
           const vapidRes = await API.get('/push-auth/vapid-public-key');
           const publicKey = vapidRes.data.publicKey;
           
+          const existing = await registration.pushManager.getSubscription();
+          if (existing) {
+            await existing.unsubscribe();
+          }
+          
           const subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(publicKey)

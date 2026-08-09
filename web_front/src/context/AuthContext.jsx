@@ -144,6 +144,12 @@ export function AuthProvider({ children }) {
     const keyRes = await API.get('/push-auth/vapid-public-key');
     const vapidPublicKey = keyRes.data.publicKey;
 
+    // Unsubscribe from any existing subscription to clear stale keys
+    const existing = await registration.pushManager.getSubscription();
+    if (existing) {
+      await existing.unsubscribe();
+    }
+
     // Create push subscription
     const subscription = await registration.pushManager.subscribe({
       userVisibleOnly: true,
