@@ -108,6 +108,39 @@ export default function SettingsScreen({ navigate }) {
     }
   };
 
+  const handleRemoveAvatar = async () => {
+    setSavingProfile(true);
+    try {
+      await updateProfile({ displayName: dispName, avatar: '' });
+      Alert.alert('Success', 'Profile photo removed successfully.');
+    } catch (err) {
+      console.error('Error removing avatar:', err);
+      Alert.alert('Error', 'Failed to remove photo: ' + err.message);
+    } finally {
+      setSavingProfile(false);
+    }
+  };
+
+  const handleAvatarOptions = () => {
+    const options = [
+      { text: 'Choose from Library', onPress: handleChangeAvatar },
+    ];
+    if (userProfile?.avatar) {
+      options.push({ 
+        text: 'Remove Photo', 
+        style: 'destructive', 
+        onPress: handleRemoveAvatar 
+      });
+    }
+    options.push({ text: 'Cancel', style: 'cancel' });
+
+    Alert.alert(
+      'Profile Photo',
+      'Choose an option to update your profile photo:',
+      options
+    );
+  };
+
   const handleTogglePushAuth = async (wantsPush) => {
     setPushEnabled(wantsPush);
     try {
@@ -179,7 +212,7 @@ export default function SettingsScreen({ navigate }) {
             <View>
               <TouchableOpacity 
                 style={[styles.changeAvatarBtn, { backgroundColor: c.bgHover, borderColor: c.border }]}
-                onPress={handleChangeAvatar}
+                onPress={handleAvatarOptions}
               >
                 <Text style={[styles.changeAvatarText, { color: c.text }]}>Change Avatar</Text>
               </TouchableOpacity>

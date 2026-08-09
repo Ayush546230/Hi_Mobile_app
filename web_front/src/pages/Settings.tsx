@@ -128,9 +128,22 @@ export default function Settings() {
             {avatar ? <img src={avatar} alt="Avatar" style={{ width: '100%', height: '100%', objectFit: 'cover' }} /> : (name.charAt(0).toUpperCase() || 'U')}
           </div>
           <div>
-            <label htmlFor="avatar-upload" className="btn btn-secondary btn-sm" style={{ cursor: 'pointer', display: 'inline-block' }}>
+            <label htmlFor="avatar-upload" className="btn btn-outline btn-sm" style={{ cursor: 'pointer', display: 'inline-block', marginRight: 8 }}>
               Change Avatar
             </label>
+            {avatar && (
+              <button 
+                type="button" 
+                className="btn btn-outline btn-sm" 
+                style={{ color: 'var(--error)', borderColor: 'rgba(192, 57, 43, 0.3)' }}
+                onClick={() => {
+                  setAvatar('');
+                  setAvatarFile(null);
+                }}
+              >
+                Remove Photo
+              </button>
+            )}
             <input 
               type="file" 
               id="avatar-upload" 
