@@ -26,9 +26,22 @@ app.set('trust proxy', 1); // Trust first proxy (e.g. localtunnel, ngrok, Render
 const PORT = process.env.PORT || 5000;
 const server = http.createServer(app);
 
-// CORS: Mobile apps do not have a fixed origin. Set to allow all.
+// CORS: Allow both the web frontend and mobile app origins
+const allowedOrigins = [
+  'https://video-conferencing-website-one.vercel.app',
+  'http://localhost:3000',
+  'http://localhost:5173',
+];
+
 const getCorsOrigin = () => {
-  return '*';
+  return (origin, callback) => {
+    // Allow requests with no origin (mobile apps, Postman, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+    return callback(null, true); // Allow all origins for mobile app compatibility
+  };
 };
 
 // ─── Socket.io Initialization ──────────────────────────────
