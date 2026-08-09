@@ -382,8 +382,7 @@ export const respondToRequest = async (req, res) => {
 
 // ─── GET VAPID PUBLIC KEY (Public) ──────────────────────────
 export const getVapidPublicKey = (req, res) => {
-  const publicKey = process.env.VAPID_PUBLIC_KEY || 'BFsKz6YgR63Zz5k-jD8B6n-hLhH8q7P9gP9gP9gP9gP9gP9gP9gP9gP9gP9gP9gP9gP9gP9gP9gP9gP9gP9gP9g';
-  res.json({ publicKey });
+  res.json({ publicKey: VAPID_PUBLIC_KEY });
 };
 
 // ─── SUBSCRIBE TO WEB PUSH (Protected) ──────────────────────
