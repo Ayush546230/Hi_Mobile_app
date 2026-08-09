@@ -320,3 +320,63 @@ export const respondToRequest = async (req, res) => {
     res.status(500).json({ error: 'Failed to process response' });
   }
 };
+
+// ─── GET VAPID PUBLIC KEY (Public) ──────────────────────────
+export const getVapidPublicKey = (req, res) => {
+  const publicKey = process.env.VAPID_PUBLIC_KEY || 'BFsKz6YgR63Zz5k-jD8B6n-hLhH8q7P9gP9gP9gP9gP9gP9gP9gP9gP9gP9gP9gP9gP9gP9gP9gP9gP9gP9gP9g';
+  res.json({ publicKey });
+};
+
+// ─── SUBSCRIBE TO WEB PUSH (Protected) ──────────────────────
+export const subscribeWebPush = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (user) {
+      user.authMethods.push = true;
+      await user.save();
+      
+      return res.json({
+        success: true,
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+          avatar: user.avatar,
+          authMethods: user.authMethods,
+        }
+      });
+    }
+    
+    res.status(404).json({ error: 'User not found' });
+  } catch (err) {
+    console.error('Web push subscribe error:', err);
+    res.status(500).json({ error: 'Failed to subscribe to web push' });
+  }
+};
+
+// ─── UNSUBSCRIBE FROM WEB PUSH (Protected) ──────────────────
+export const unsubscribeWebPush = async (req, res) => {
+  try {
+    const user = await User.findById(req.user._id);
+    if (user) {
+      user.authMethods.push = false;
+      await user.save();
+      
+      return res.json({
+        success: true,
+        user: {
+          id: user._id,
+          email: user.email,
+          name: user.name,
+          avatar: user.avatar,
+          authMethods: user.authMethods,
+        }
+      });
+    }
+    
+    res.status(404).json({ error: 'User not found' });
+  } catch (err) {
+    console.error('Web push unsubscribe error:', err);
+    res.status(500).json({ error: 'Failed to unsubscribe from web push' });
+  }
+};
