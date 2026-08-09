@@ -112,24 +112,35 @@ export const removeFcmToken = async (req, res) => {
 export const initiateLogin = async (req, res) => {
   try {
     const { fcmToken, email, subscription } = req.body;
+    console.log('[DEBUG] initiateLogin called. Payload email:', email, 'fcmToken:', !!fcmToken, 'hasSubscription:', !!subscription);
+    if (subscription) {
+      console.log('[DEBUG] subscription keys:', Object.keys(subscription), 'endpoint:', subscription.endpoint ? subscription.endpoint.slice(0, 50) + '...' : 'none');
+    }
 
     // Find user with push enabled
     let user;
     if (subscription && subscription.endpoint) {
       user = await User.findOne({ 'webPushSubscription.endpoint': subscription.endpoint });
+      console.log('[DEBUG] Search by webPushSubscription.endpoint result:', user ? user.email : 'NOT FOUND');
     }
     if (!user && fcmToken) {
       user = await User.findOne({ fcmToken });
+      console.log('[DEBUG] Search by fcmToken result:', user ? user.email : 'NOT FOUND');
     }
     if (!user && email) {
       user = await User.findOne({ email: email.toLowerCase(), 'authMethods.push': true });
+      console.log('[DEBUG] Search by email result:', user ? user.email : 'NOT FOUND');
     }
 
     if (!user) {
+      console.log('[DEBUG] initiateLogin failed: User not found in DB');
       return res.status(404).json({ error: 'No active device subscription found.' });
     }
 
+    console.log('[DEBUG] User found:', user.email, 'FCM token:', !!user.fcmToken, 'Web subscription:', !!user.webPushSubscription);
+
     if (!user.fcmToken && !user.webPushSubscription) {
+      console.log('[DEBUG] initiateLogin failed: Neither FCM nor Web Push subscription is registered on the found User doc');
       return res.status(400).json({ error: 'No FCM token or browser push subscription registered for this user.' });
     }
 
@@ -379,20 +390,26 @@ export const getVapidPublicKey = (req, res) => {
 export const subscribeWebPush = async (req, res) => {
   try {
     const { subscription } = req.body;
+    console.log('[DEBUG] subscribeWebPush called for user:', req.user.email);
+    console.log('[DEBUG] subscription payload:', JSON.stringify(subscription));
+
     const user = await User.findById(req.user._id);
     if (user) {
       user.authMethods.push = true;
       user.webPushSubscription = subscription;
-      await user.save();
+      user.markModified('webPushSubscription');
+      const savedUser = await user.save();
+      
+      console.log('[DEBUG] User subscription saved. DB authMethods.push:', savedUser.authMethods.push, 'hasSubscription:', !!savedUser.webPushSubscription);
       
       return res.json({
         success: true,
         user: {
-          id: user._id,
-          email: user.email,
-          name: user.name,
-          avatar: user.avatar,
-          authMethods: user.authMethods,
+          id: savedUser._id,
+          email: savedUser.email,
+          name: savedUser.name,
+          avatar: savedUser.avatar,
+          authMethods: savedUser.authMethods,
         }
       });
     }
@@ -407,20 +424,24 @@ export const subscribeWebPush = async (req, res) => {
 // ─── UNSUBSCRIBE FROM WEB PUSH (Protected) ──────────────────
 export const unsubscribeWebPush = async (req, res) => {
   try {
+    console.log('[DEBUG] unsubscribeWebPush called for user:', req.user.email);
     const user = await User.findById(req.user._id);
     if (user) {
       user.authMethods.push = false;
       user.webPushSubscription = undefined;
-      await user.save();
+      user.markModified('webPushSubscription');
+      const savedUser = await user.save();
+      
+      console.log('[DEBUG] User unsubscribed. DB authMethods.push:', savedUser.authMethods.push);
       
       return res.json({
         success: true,
         user: {
-          id: user._id,
-          email: user.email,
-          name: user.name,
-          avatar: user.avatar,
-          authMethods: user.authMethods,
+          id: savedUser._id,
+          email: savedUser.email,
+          name: savedUser.name,
+          avatar: savedUser.avatar,
+          authMethods: savedUser.authMethods,
         }
       });
     }
