@@ -294,7 +294,7 @@ export default function MeetingRoomScreen({ navigate, params }) {
     }
   };
 
-  if (loading) {
+  if (loading || jwtToken === null) {
     return (
       <View style={styles.loaderContainer}>
         <Image source={hiLogo} style={styles.loaderLogo} resizeMode="contain" />
