@@ -138,21 +138,31 @@ export const getMeetingByRoomName = async (req, res) => {
 // ─── GET /api/meetings/room/:roomName/token ─────────────────
 export const getJaaSToken = async (req, res) => {
   try {
+    console.log(`[JaaS-DEBUG] Token request received for room: ${req.params.roomName}`);
+    console.log(`[JaaS-DEBUG] Authenticated user: id=${req.user._id}, email=${req.user.email}`);
+
     const meeting = await Meeting.findOne({ roomName: req.params.roomName });
-    if (!meeting) return res.status(404).json({ error: 'Meeting not found' });
+    if (!meeting) {
+      console.log(`[JaaS-DEBUG] Meeting NOT FOUND for room: ${req.params.roomName}`);
+      return res.status(404).json({ error: 'Meeting not found' });
+    }
+
+    console.log(`[JaaS-DEBUG] Meeting found: id=${meeting._id}, userId=${meeting.userId}, room=${meeting.roomName}`);
 
     // Determine if the requesting user is the host
     const isHost = meeting.userId.toString() === req.user._id.toString();
+    console.log(`[JaaS-DEBUG] isHost=${isHost} (meeting.userId=${meeting.userId} vs req.user._id=${req.user._id})`);
 
     // Generate the JaaS token
     const token = generateJaaSToken(req.user, req.params.roomName, isHost);
+    console.log(`[JaaS-DEBUG] Token generated successfully. Length=${token.length}, isHost=${isHost}`);
     
     res.json({ 
       token,
       appId: process.env.JAAS_APP_ID || 'vpaas-magic-cookie-3d02f5dbcd50462788e0b6bbfcb6bbd4'
     });
   } catch (err) {
-    console.error('Get JaaS token error:', err);
+    console.error('[JaaS-DEBUG] Token generation FAILED:', err.message, err.stack);
     res.status(500).json({ error: err.message || 'Failed to generate token' });
   }
 };

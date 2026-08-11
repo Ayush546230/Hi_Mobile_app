@@ -57,15 +57,42 @@ export default function MeetingRoomScreen({ navigate, params }) {
         const m = res.data.meeting;
         setRoomData(m);
 
-        // Fetch JaaS token
-        try {
-          const tokRes = await API.get(`/meetings/room/${roomName}/token`);
-          setJwtToken(tokRes.data.token);
-          if (tokRes.data.appId) {
-            setJaasAppId(tokRes.data.appId);
+        // Fetch JaaS token (with retry for cold-start / transient errors)
+        let tokenFetched = false;
+        for (let attempt = 1; attempt <= 2; attempt++) {
+          try {
+            const tokRes = await API.get(`/meetings/room/${roomName}/token`);
+            if (tokRes.data.token) {
+              setJwtToken(tokRes.data.token);
+              if (tokRes.data.appId) {
+                setJaasAppId(tokRes.data.appId);
+              }
+              tokenFetched = true;
+              console.log(`[DEBUG] JaaS token fetched successfully on attempt ${attempt}`);
+              break;
+            } else {
+              console.log(`[DEBUG] Token response missing 'token' field on attempt ${attempt}:`, JSON.stringify(tokRes.data));
+            }
+          } catch (tokErr) {
+            const status = tokErr?.response?.status;
+            const errBody = tokErr?.response?.data;
+            console.log(`[DEBUG] JaaS token fetch attempt ${attempt} failed:`, {
+              status,
+              errBody: JSON.stringify(errBody),
+              message: tokErr.message,
+            });
+            // If 401, auth token may have expired – no point retrying
+            if (status === 401) break;
+            // Wait 2s before retry (covers Render cold-start 500s)
+            if (attempt < 2) await new Promise(r => setTimeout(r, 2000));
           }
-        } catch (tokErr) {
-          console.log('JaaS token error (falling back to guest):', tokErr.message);
+        }
+        if (!tokenFetched) {
+          console.warn('[DEBUG] All JaaS token fetch attempts failed – falling back to public Jitsi');
+          Alert.alert(
+            'Debug: Token Failed',
+            'Could not fetch JaaS moderator token from backend. The meeting will load on the public Jitsi server (moderator login may appear). Please share this alert with the developer.',
+          );
           setJwtToken('');
         }
 
