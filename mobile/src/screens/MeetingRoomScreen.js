@@ -6,7 +6,7 @@ import { useMeetings } from '../context/MeetingContext';
 import { useTheme } from '../context/ThemeContext';
 import { Mic, MicOff, Video as VideoIcon, VideoOff, LogOut, ShieldAlert, Clock, Plus, Users, UserCheck, Check, X, ArrowRight } from 'lucide-react-native';
 
-const JAAS_APP_ID = 'vpaas-magic-cookie-3d02f5dbcd50462788e0b6bbfcb6bbd4'; // fallback placeholder
+const JAAS_APP_ID = 'vpaas-magic-cookie-e3bf79ea2b56454ea371d31b07ac1806';
 const hiLogo = require('../../assets/Hi_Logo.png');
 const poweredByLogo = require('../../assets/powered_by_aiRender.png');
 

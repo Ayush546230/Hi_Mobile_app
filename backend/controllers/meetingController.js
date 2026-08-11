@@ -159,7 +159,7 @@ export const getJaaSToken = async (req, res) => {
     
     res.json({ 
       token,
-      appId: process.env.JAAS_APP_ID || 'vpaas-magic-cookie-3d02f5dbcd50462788e0b6bbfcb6bbd4'
+      appId: process.env.JAAS_APP_ID || 'vpaas-magic-cookie-e3bf79ea2b56454ea371d31b07ac1806'
     });
   } catch (err) {
     console.error('[JaaS-DEBUG] Token generation FAILED:', err.message, err.stack);
