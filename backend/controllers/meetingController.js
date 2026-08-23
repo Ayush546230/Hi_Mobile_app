@@ -20,7 +20,7 @@ function generateMeetingId() {
 }
 
 function getMeetingLink(roomName) {
-  const frontendUrl = process.env.FRONTEND_URL || 'https://video-conferencing-website-one.vercel.app';
+  const frontendUrl = process.env.FRONTEND_URL || 'https://hi-mobile-app.vercel.app';
   return `${frontendUrl}/meeting/${roomName}`;
 }
 
