@@ -99,15 +99,15 @@ self.addEventListener('notificationclick', (event) => {
         });
       })
     );
-  } else {
-    // User clicked on the notification body (not the buttons)
-    // Open the approve page as a fallback
-    const url = data.url || '/push-approve';
+  } else if (action === 'join' || action === '') {
+    // User clicked Join or clicked on the notification body (not the buttons)
+    // Open the meeting URL or dashboard
+    const url = data.url || '/dashboard';
     event.waitUntil(
       clients.matchAll({ type: 'window', includeUncontrolled: true }).then((windowClients) => {
         // Try to focus an existing window
         for (const client of windowClients) {
-          if (client.url.includes('/push-approve') && 'focus' in client) {
+          if (client.url.includes(url) && 'focus' in client) {
             return client.focus();
           }
         }
@@ -117,6 +117,9 @@ self.addEventListener('notificationclick', (event) => {
         }
       })
     );
+  } else if (action === 'cancel') {
+    // Just close the notification (already done above)
+    return;
   }
 });
 

@@ -68,7 +68,7 @@ function getMeetingInviteHTML(meeting, senderName) {
     </div>
 
     <div style="text-align: center; margin: 24px 0;">
-      <a href="${meeting.link}" style="display: inline-block; background: linear-gradient(135deg, #6c63ff 0%, #5a52d5 100%); color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+      <a href="${meeting.link}" style="display: inline-block; background-color: #6c63ff; background: linear-gradient(135deg, #6c63ff 0%, #5a52d5 100%); color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
         Join Video Conference
       </a>
     </div>
@@ -119,7 +119,7 @@ function getMeetingReminderHTML(meeting) {
     </div>
 
     <div style="text-align: center; margin: 24px 0;">
-      <a href="${meeting.link}" style="display: inline-block; background: linear-gradient(135deg, #00c853 0%, #009624 100%); color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
+      <a href="${meeting.link}" style="display: inline-block; background-color: #00c853; background: linear-gradient(135deg, #00c853 0%, #009624 100%); color: white; text-decoration: none; padding: 14px 32px; border-radius: 8px; font-weight: 600; font-size: 16px;">
         Join Now
       </a>
     </div>

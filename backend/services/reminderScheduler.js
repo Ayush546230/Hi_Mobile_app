@@ -85,6 +85,10 @@ async function sendPushReminder(meeting, user) {
       title: `Meeting Reminder: ${meeting.title}`,
       body: `Your video conference is starting in ${timeText}. Tap to join.`,
       tag: `meeting-reminder-${meeting._id}`,
+      actions: [
+        { action: 'join', title: 'Join' },
+        { action: 'cancel', title: 'Cancel' }
+      ],
       data: {
         url: `/meeting/${meeting.roomName}`,
       },
