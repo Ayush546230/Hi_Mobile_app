@@ -129,7 +129,7 @@ export const verifyRegister = async (req, res) => {
       expectedChallenge,
       expectedOrigin: expectedOrigins,
       expectedRPID: RP_ID,
-      requireUserVerification: true,
+      requireUserVerification: false,
     });
 
     const { verified, registrationInfo } = verification;
@@ -318,7 +318,7 @@ export const verifyAuth = async (req, res) => {
         counter: passkey.counter,
         transports: passkey.transports,
       },
-      requireUserVerification: true,
+      requireUserVerification: false,
     });
 
     const { verified, authenticationInfo } = verification;
