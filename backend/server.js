@@ -57,33 +57,51 @@ export const io = new Server(server, {
 app.set('io', io);
 
 io.on('connection', (socket) => {
+  console.log(`[SOCKET] New client connected: ${socket.id}`);
+
   // Client joins a specific meeting room
   socket.on('join-room', (roomName) => {
     socket.join(roomName);
+    console.log(`[SOCKET] Client ${socket.id} joined room: ${roomName}`);
+  });
+
+  // Host joined and notifies guests in the room
+  socket.on('host-joined', (roomName) => {
+    socket.to(roomName).emit('host-joined');
+    console.log(`[SOCKET] Host joined room: ${roomName}. Notifying guests.`);
   });
 
   // Guest knocking to join a meeting
   socket.on('guest-knocking', (data) => {
+    console.log(`[SOCKET] Guest ${data.user?.name || socket.id} knocking in room: ${data.roomName}`);
     socket.to(data.roomName).emit('guest-knocking', { ...data.user, socketId: socket.id });
   });
 
   // Host admits a guest
   socket.on('admit-guest', (socketId) => {
+    console.log(`[SOCKET] Host admitted guest socket: ${socketId}`);
     io.to(socketId).emit('guest-admitted');
   });
 
   // Host denies a guest
   socket.on('deny-guest', (socketId) => {
+    console.log(`[SOCKET] Host denied guest socket: ${socketId}`);
     io.to(socketId).emit('guest-denied');
   });
 
   // Client joins a push authentication room to listen for login approval
   socket.on('join-push-room', (requestId) => {
     socket.join(`push-${requestId}`);
+    console.log(`[SOCKET] Client ${socket.id} joined push auth room: push-${requestId}`);
   });
 
   socket.on('join-dashboard', (email) => {
     socket.join(`dashboard-${email.toLowerCase()}`);
+    console.log(`[SOCKET] Client ${socket.id} joined dashboard room: dashboard-${email.toLowerCase()}`);
+  });
+
+  socket.on('disconnect', () => {
+    console.log(`[SOCKET] Client disconnected: ${socket.id}`);
   });
 });
 
