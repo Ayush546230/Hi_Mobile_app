@@ -159,12 +159,12 @@ h1, h2, h3, h4 {
 
 .btn-outline {
   background: transparent;
-  color: var(--ink);
-  border: 1.5px solid var(--cream-border);
+  color: var(--text);
+  border: 1.5px solid var(--border);
 }
 .btn-outline:hover {
-  border-color: var(--ink-soft);
-  background: var(--white);
+  border-color: var(--primary);
+  background: var(--bg-hover);
   transform: translateY(-1px);
 }
 
