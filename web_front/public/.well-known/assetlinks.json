@@ -1,0 +1,15 @@
+[
+  {
+    "relation": [
+      "delegate_permission/common.handle_all_urls",
+      "delegate_permission/common.get_login_creds"
+    ],
+    "target": {
+      "namespace": "android_app",
+      "package_name": "com.himobile",
+      "sha256_cert_fingerprints": [
+        "64:B1:00:F5:43:A4:A9:09:6E:76:BD:0E:5D:86:F7:B5:A0:8B:99:20:09:1B:46:98:1A:25:8A:55:E5:E7:90:E7"
+      ]
+    }
+  }
+]

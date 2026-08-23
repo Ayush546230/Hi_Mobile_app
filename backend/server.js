@@ -123,7 +123,7 @@ const apiLimiter = rateLimit({
 app.use('/api/', apiLimiter);
 
 // Strict rate limiter for Authentication
-const authLimiter = rateLimit({ 
+const authLimiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
   max: 100, // relaxed to 100 attempts for testing
   message: { error: 'Too many authentication attempts, please try again after 15 minutes' }
