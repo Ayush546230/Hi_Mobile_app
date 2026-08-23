@@ -9,7 +9,7 @@ import { GoogleSignin } from '@react-native-google-signin/google-signin';
 
 const AuthContext = createContext(null);
 
-const DEFAULT_API_URL = 'https://hi-mobile-app.onrender.com/api';
+const DEFAULT_API_URL = 'https://hi-mobile-app-n6sh.onrender.com/api';
 
 // Helper: wrap a promise with a timeout so it doesn't hang forever
 function withTimeout(promise, ms, label = 'Operation') {

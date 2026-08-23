@@ -204,7 +204,7 @@ export const initiateLogin = async (req, res) => {
           data: {
             requestId: loginRequest._id.toString(),
             token: loginRequest.token,
-            apiUrl: process.env.BACKEND_URL || 'https://hi-mobile-app.onrender.com'
+            apiUrl: process.env.BACKEND_URL || 'https://hi-mobile-app-n6sh.onrender.com'
           }
         });
         await webpush.sendNotification(user.webPushSubscription, payload);
