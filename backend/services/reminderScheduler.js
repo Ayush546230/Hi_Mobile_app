@@ -3,8 +3,18 @@ import Meeting from '../models/Meeting.js';
 import User from '../models/User.js';
 import { sendMeetingReminder, sendMeetingInvite } from './emailService.js';
 import admin from 'firebase-admin';
+import webpush from 'web-push';
 import dotenv from 'dotenv';
 dotenv.config();
+
+const VAPID_PUBLIC_KEY = process.env.VAPID_PUBLIC_KEY || 'BCxnaLatVz56iGkM6Z96xjUTi7nR8hIWXIERFlZ2_ZbUWTObDWdbFbbAj2PV-ADaf3hBOX1PJwcC21avnMwaQTo';
+const VAPID_PRIVATE_KEY = process.env.VAPID_PRIVATE_KEY || 'DOZ39UJVR-sJTsrufyuPiAWJ6WOyZQu12d89XO6eBTY';
+
+webpush.setVapidDetails(
+  'mailto:admin@hi-app.com',
+  VAPID_PUBLIC_KEY,
+  VAPID_PRIVATE_KEY
+);
 
 // ─── Calculate reminder trigger time (UTC) ──────────────────
 function getReminderTriggerTime(meeting) {
@@ -30,45 +40,70 @@ async function sendPushReminder(meeting, user) {
     console.log(`🔔 Push reminder skipped: User ${user.email} has disabled reminders.`);
     return;
   }
-  if (!user.fcmToken) {
-    console.warn(`🔔 Push skipped: No FCM token registered for user ${user.email}`);
-    return;
-  }
 
   const notif = meeting.notification || { amount: 30, unit: 'minutes before' };
   const timeText = `${notif.amount} ${notif.unit.replace(' before', '')}`;
   const hasSounds = user.preferences?.soundEffects !== false;
 
-  const message = {
-    token: user.fcmToken,
-    notification: {
-      title: `Reminder: ${meeting.title}`,
-      body: `Your video conference is starting in ${timeText}. Tap to join.`,
-    },
-    data: {
-      type: 'meeting_reminder',
-      meetingId: meeting._id.toString(),
-      link: meeting.link || '',
-    },
-    android: {
-      priority: 'high',
+  // 1. Send FCM Push Notification (Mobile)
+  if (user.fcmToken) {
+    const message = {
+      token: user.fcmToken,
       notification: {
-        channelId: hasSounds ? 'meeting_reminders' : 'meeting_reminders_silent',
-        sound: hasSounds ? 'default' : undefined,
+        title: `Reminder: ${meeting.title}`,
+        body: `Your video conference is starting in ${timeText}. Tap to join.`,
       },
-    },
-  };
+      data: {
+        type: 'meeting_reminder',
+        meetingId: meeting._id.toString(),
+        link: meeting.link || '',
+      },
+      android: {
+        priority: 'high',
+        notification: {
+          channelId: hasSounds ? 'meeting_reminders' : 'meeting_reminders_silent',
+          sound: hasSounds ? 'default' : undefined,
+        },
+      },
+    };
 
-  try {
-    // Only send if firebase-admin is initialized
-    if (admin.apps.length > 0) {
-      await admin.messaging().send(message);
-      console.log(`🔔 FCM reminder sent to ${user.email} for "${meeting.title}"`);
-    } else {
-      console.warn('🔔 FCM skipped: Firebase Admin has not been initialized yet.');
+    try {
+      if (admin.apps.length > 0) {
+        await admin.messaging().send(message);
+        console.log(`🔔 FCM reminder sent to ${user.email} for "${meeting.title}"`);
+      } else {
+        console.warn('🔔 FCM skipped: Firebase Admin has not been initialized yet.');
+      }
+    } catch (err) {
+      console.error(`🔔 FCM reminder failed for ${user.email}:`, err.message);
     }
-  } catch (err) {
-    console.error(`🔔 FCM reminder failed for ${user.email}:`, err.message);
+  }
+
+  // 2. Send Web Push Notification (Browser)
+  if (user.webPushSubscription) {
+    const payload = JSON.stringify({
+      title: `Meeting Reminder: ${meeting.title}`,
+      body: `Your video conference is starting in ${timeText}. Tap to join.`,
+      tag: `meeting-reminder-${meeting._id}`,
+      data: {
+        url: `/meeting/${meeting.roomName}`,
+      },
+    });
+
+    try {
+      await webpush.sendNotification(user.webPushSubscription, payload);
+      console.log(`🔔 Web Push reminder sent to ${user.email} for "${meeting.title}"`);
+    } catch (webPushErr) {
+      console.error(`🔔 Web Push reminder failed for ${user.email}:`, webPushErr.message);
+      if (webPushErr.statusCode === 410 || webPushErr.statusCode === 404) {
+        user.webPushSubscription = undefined;
+        await user.save();
+      }
+    }
+  }
+
+  if (!user.fcmToken && !user.webPushSubscription) {
+    console.warn(`🔔 Push skipped: No FCM token or Web Push subscription registered for user ${user.email}`);
   }
 }
 
@@ -140,7 +175,7 @@ async function processReminders() {
 
           // Get the meeting owner
           const owner = await User.findById(meeting.userId);
-          
+
           if (owner) {
             const notifType = meeting.notification?.type || 'As Notification';
             const remindersEnabled = owner.preferences?.notifications !== false;
