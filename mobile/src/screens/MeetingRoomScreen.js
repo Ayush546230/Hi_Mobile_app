@@ -7,6 +7,10 @@ import { useTheme } from '../context/ThemeContext';
 import { Mic, MicOff, Video as VideoIcon, VideoOff, LogOut, ShieldAlert, Clock, Plus, Users, UserCheck, Check, X, ArrowRight } from 'lucide-react-native';
 
 const JAAS_APP_ID = 'vpaas-magic-cookie-e3bf79ea2b56454ea371d31b07ac1806';
+
+// Safe ID comparison: handles both user.id and user._id, and ObjectId vs string
+const getUserId = (user) => user?.id?.toString() || user?._id?.toString();
+const isSameId = (a, b) => !!a && !!b && a.toString() === b.toString();
 const hiLogo = require('../../assets/Hi_Logo.png');
 const poweredByLogo = require('../../assets/powered_by_aiRender.png');
 
@@ -97,7 +101,9 @@ export default function MeetingRoomScreen({ navigate, params }) {
         }
 
         // Check permission immediately
-        const isHost = m.userId === user?.id;
+        // user.id may be ObjectId or string; use toString() for safe comparison
+        const userId = user?.id?.toString() || user?._id?.toString();
+        const isHost = m.userId?.toString() === userId;
         const isInvitee = m.participants?.some(p => p.email === user?.email);
         const isInstantMeeting = m.type === 'instant';
 
@@ -202,7 +208,7 @@ export default function MeetingRoomScreen({ navigate, params }) {
       }
 
       // Host Warnings
-      if (user?.id === roomData.userId) {
+      if (isSameId(getUserId(user), roomData.userId)) {
         if (remainingSecs === 600) setWarningPopup(600); // 10 min
         else if (remainingSecs === 300) setWarningPopup(300); // 5 min
         else if (remainingSecs === 120) setWarningPopup(120); // 2 min
@@ -238,7 +244,7 @@ export default function MeetingRoomScreen({ navigate, params }) {
     setEnded(true);
     setTimeLeft(30);
     const durationMin = Math.round((Date.now() - joinTimeRef.current) / 60000);
-    if (roomData && user?.id === roomData.userId) {
+    if (roomData && isSameId(getUserId(user), roomData.userId)) {
       try {
         await API.put(`/meetings/${roomData.id}`, { status: 'completed', duration: durationMin });
         if (socket) socket.emit('meeting-ended');
@@ -252,7 +258,7 @@ export default function MeetingRoomScreen({ navigate, params }) {
   const handleEndMeetingForAll = async () => {
     setShowLeaveOptionsModal(false);
     const durationMin = Math.round((Date.now() - joinTimeRef.current) / 60000);
-    if (roomData && user?.id === roomData.userId) {
+    if (roomData && isSameId(getUserId(user), roomData.userId)) {
       try {
         await API.put(`/meetings/${roomData.id}`, { status: 'completed', duration: durationMin });
         if (socket) socket.emit('meeting-ended');
@@ -417,7 +423,7 @@ export default function MeetingRoomScreen({ navigate, params }) {
       if (!event?.nativeEvent?.data) return;
       const data = JSON.parse(event.nativeEvent.data);
       if (data.type === 'joined-conference') {
-        const isHost = roomData?.userId === user?.id;
+        const isHost = isSameId(roomData?.userId, getUserId(user));
         if (isHost && !roomData?.hostJoined) {
           console.log('Host joined the conference! Activating duration timer.');
           await API.put(`/meetings/${roomData.id}`, { hostJoined: true });
@@ -461,7 +467,7 @@ export default function MeetingRoomScreen({ navigate, params }) {
         onNavigationStateChange={(navState) => {
           const url = navState.url;
           if (url.includes('close.html') || url.includes('/close') || url.includes('static/close')) {
-            const isHost = roomData?.userId === user?.id;
+            const isHost = isSameId(roomData?.userId, getUserId(user));
             if (isHost) {
               setShowLeaveOptionsModal(true);
             } else {
@@ -472,7 +478,7 @@ export default function MeetingRoomScreen({ navigate, params }) {
         onShouldStartLoadWithRequest={(request) => {
           const url = request.url;
           if (url.includes('close.html') || url.includes('/close') || url.includes('static/close')) {
-            const isHost = roomData?.userId === user?.id;
+            const isHost = isSameId(roomData?.userId, getUserId(user));
             if (isHost) {
               setShowLeaveOptionsModal(true);
             } else {
@@ -485,7 +491,7 @@ export default function MeetingRoomScreen({ navigate, params }) {
       />
 
       {/* Host Control Actions (Knock button ONLY - Leave is handled inside Jitsi) */}
-      {user?.id === roomData?.userId && knockingGuests.length > 0 && (
+      {isSameId(getUserId(user), roomData?.userId) && knockingGuests.length > 0 && (
         <View style={[styles.controlsRow, { backgroundColor: colors.bgCard, borderTopColor: colors.border }]}>
           <TouchableOpacity style={[styles.controlBtn, { backgroundColor: colors.gold }]} onPress={() => Alert.alert('Guests Waiting', `${knockingGuests.length} users are knocking to enter.`)}>
             <Users size={20} color="#fff" />
@@ -495,7 +501,7 @@ export default function MeetingRoomScreen({ navigate, params }) {
       )}
 
       {/* Host admit knocking guest overlay modal */}
-      {user?.id === roomData?.userId && knockingGuests.length > 0 && (
+      {isSameId(getUserId(user), roomData?.userId) && knockingGuests.length > 0 && (
         <View style={[styles.lobbyOverlay, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
           <Text style={[styles.lobbyTitle, { color: colors.text }]}>Knocking: {knockingGuests[0].name}</Text>
           <View style={styles.lobbyBtns}>
