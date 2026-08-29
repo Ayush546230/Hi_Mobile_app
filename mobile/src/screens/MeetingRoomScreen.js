@@ -63,7 +63,8 @@ export default function MeetingRoomScreen({ navigate, params }) {
 
         // Fetch JaaS token (with retry for cold-start / transient errors)
         let tokenFetched = false;
-        for (let attempt = 1; attempt <= 2; attempt++) {
+        let lastTokenErr = null;
+        for (let attempt = 1; attempt <= 3; attempt++) {
           try {
             const tokRes = await API.get(`/meetings/room/${roomName}/token`);
             if (tokRes.data.token) {
@@ -80,6 +81,7 @@ export default function MeetingRoomScreen({ navigate, params }) {
           } catch (tokErr) {
             const status = tokErr?.response?.status;
             const errBody = tokErr?.response?.data;
+            lastTokenErr = { status, errBody, message: tokErr.message };
             console.log(`[DEBUG] JaaS token fetch attempt ${attempt} failed:`, {
               status,
               errBody: JSON.stringify(errBody),
@@ -87,15 +89,18 @@ export default function MeetingRoomScreen({ navigate, params }) {
             });
             // If 401, auth token may have expired – no point retrying
             if (status === 401) break;
-            // Wait 2s before retry (covers Render cold-start 500s)
-            if (attempt < 2) await new Promise(r => setTimeout(r, 2000));
+            // Wait before retry (covers Render cold-start)
+            if (attempt < 3) await new Promise(r => setTimeout(r, attempt * 3000));
           }
         }
         if (!tokenFetched) {
+          const errInfo = lastTokenErr
+            ? `HTTP ${lastTokenErr.status || 'ERR'}: ${lastTokenErr.message}`
+            : 'No response';
           console.warn('[DEBUG] All JaaS token fetch attempts failed – falling back to public Jitsi');
           Alert.alert(
             'Debug: Token Failed',
-            'Could not fetch JaaS moderator token from backend. The meeting will load on the public Jitsi server (moderator login may appear). Please share this alert with the developer.',
+            `Could not fetch JaaS token.\nError: ${errInfo}\n\nMeeting will load on public Jitsi (moderator login may appear).`,
           );
           setJwtToken('');
         }
