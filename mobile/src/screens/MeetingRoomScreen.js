@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { StyleSheet, Text, View, TouchableOpacity, ActivityIndicator, Modal, ScrollView, Alert, Dimensions, TextInput, Image } from 'react-native';
 import { WebView } from 'react-native-webview';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useAuth } from '../context/AuthContext';
 import { useMeetings } from '../context/MeetingContext';
 import { useTheme } from '../context/ThemeContext';
@@ -66,7 +67,12 @@ export default function MeetingRoomScreen({ navigate, params }) {
         let lastTokenErr = null;
         for (let attempt = 1; attempt <= 3; attempt++) {
           try {
-            const tokRes = await API.get(`/meetings/room/${roomName}/token`);
+            // Manually read auth token from AsyncStorage and attach header
+            // (bypasses async interceptor which can silently drop headers on mobile)
+            const authToken = await AsyncStorage.getItem('auth_token');
+            const tokRes = await API.get(`/meetings/room/${roomName}/token`, {
+              headers: authToken ? { Authorization: `Bearer ${authToken}` } : {}
+            });
             if (tokRes.data.token) {
               setJwtToken(tokRes.data.token);
               if (tokRes.data.appId) {
