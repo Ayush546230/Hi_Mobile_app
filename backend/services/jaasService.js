@@ -7,80 +7,95 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-let privateKey = null;
 let privateKeyObject = null;
 
 // =====================================================
 // LOAD JAAS PRIVATE KEY
 // =====================================================
 
-if (process.env.JAAS_PRIVATE_KEY) {
-  let raw = process.env.JAAS_PRIVATE_KEY;
-
-  console.log('[JaaS] ===== PRIVATE KEY LOADING =====');
-
-  // Remove surrounding quotes if Render/env has them
-  if (
-    (raw.startsWith('"') && raw.endsWith('"')) ||
-    (raw.startsWith("'") && raw.endsWith("'"))
-  ) {
+function loadPrivateKey(raw) {
+  // Strip surrounding quotes
+  if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
     raw = raw.slice(1, -1);
   }
 
-  // Convert literal \n into real newlines
+  // Convert literal \n to real newlines (handles single-line stored keys)
   if (raw.includes('\\n')) {
     raw = raw.replace(/\\n/g, '\n');
   }
 
-  // Remove accidental CR characters
-  raw = raw.replace(/\r/g, '');
+  // Remove CR characters
+  raw = raw.replace(/\r/g, '').trim();
 
-  privateKey = raw.trim();
+  console.log('[JaaS] Key length:', raw.length, '| Has BEGIN:', raw.includes('-----BEGIN PRIVATE KEY-----'));
 
-  console.log('[JaaS] Key length:', privateKey.length);
-  console.log('[JaaS] Has BEGIN PRIVATE KEY:', privateKey.includes('-----BEGIN PRIVATE KEY-----'));
-  console.log('[JaaS] Has END PRIVATE KEY:', privateKey.includes('-----END PRIVATE KEY-----'));
-  console.log('[JaaS] Has real newline:', privateKey.includes('\n'));
-  console.log('[JaaS] First 60 chars:', privateKey.substring(0, 60).replace(/\n/g, '[NL]'));
+  // Extract base64 content
+  const base64Content = raw
+    .replace(/-----BEGIN[^-]*-----/g, '')
+    .replace(/-----END[^-]*-----/g, '')
+    .replace(/[\s\r\n]+/g, '');
 
-  // IMPORTANT: Convert PEM string into Node.js asymmetric KeyObject
-  try {
-    privateKeyObject = crypto.createPrivateKey({
-      key: privateKey,
-      format: 'pem',
-    });
+  const derBuffer = Buffer.from(base64Content, 'base64');
+  console.log('[JaaS] DER length:', derBuffer.length);
+  console.log('[JaaS] DER OID bytes (9-19):', derBuffer.slice(9, 20).toString('hex'));
 
-    console.log('[JaaS] ✅ Private key parsed successfully');
-    console.log('[JaaS] Key type:', privateKeyObject.asymmetricKeyType);
-
-    if (privateKeyObject.asymmetricKeyType !== 'rsa') {
-      throw new Error(`Expected RSA private key, got ${privateKeyObject.asymmetricKeyType}`);
-    }
-
-    console.log('[JaaS] ✅ RSA private key confirmed');
-  } catch (error) {
-    console.error('[JaaS] ❌ Private key parsing FAILED:', error.message);
-    privateKeyObject = null;
+  // =====================================================
+  // FIX NON-STANDARD OID
+  // The key has OID 1.2.840.113549.1.1.5 (sha1WithRSAEncryption)
+  // But PKCS8 requires OID 1.2.840.113549.1.1.1 (rsaEncryption)
+  // This is a 1-byte fix: byte[19] = 0x05 → 0x01
+  // =====================================================
+  if (
+    derBuffer.length > 20 &&
+    derBuffer[9]  === 0x06 &&  // OID tag
+    derBuffer[10] === 0x09 &&  // OID length = 9
+    derBuffer[11] === 0x2A &&  // 1.2...
+    derBuffer[12] === 0x86 &&
+    derBuffer[13] === 0x48 &&
+    derBuffer[14] === 0x86 &&
+    derBuffer[15] === 0xF7 &&  // .840...
+    derBuffer[16] === 0x0D &&  // .113549...
+    derBuffer[17] === 0x01 &&
+    derBuffer[18] === 0x01 &&
+    derBuffer[19] === 0x05    // sha1WithRSAEncryption (WRONG) → need 0x01 (rsaEncryption)
+  ) {
+    console.log('[JaaS] ⚠️ Non-standard OID detected (sha1WithRSAEncryption). Patching to rsaEncryption...');
+    derBuffer[19] = 0x01;
+    console.log('[JaaS] OID patched. New bytes:', derBuffer.slice(9, 20).toString('hex'));
+  } else {
+    console.log('[JaaS] OID check passed or unexpected format. Byte[19]:', derBuffer[19]?.toString(16));
   }
 
-  console.log('[JaaS] ===== PRIVATE KEY LOADING DONE =====');
+  // Create KeyObject from patched DER
+  try {
+    const keyObj = crypto.createPrivateKey({ key: derBuffer, format: 'der', type: 'pkcs8' });
+    console.log('[JaaS] ✅ KeyObject created! asymmetricKeyType:', keyObj.asymmetricKeyType);
+    return keyObj;
+  } catch (e) {
+    console.error('[JaaS] ❌ DER KeyObject failed:', e.message, '— trying PEM fallback...');
+    // Fallback: try using the PEM string directly
+    try {
+      const keyObj = crypto.createPrivateKey({ key: raw, format: 'pem' });
+      console.log('[JaaS] ✅ PEM fallback succeeded!');
+      return keyObj;
+    } catch (e2) {
+      console.error('[JaaS] ❌ PEM fallback also failed:', e2.message);
+      return null;
+    }
+  }
+}
 
+if (process.env.JAAS_PRIVATE_KEY) {
+  console.log('[JaaS] Loading private key from environment...');
+  privateKeyObject = loadPrivateKey(process.env.JAAS_PRIVATE_KEY);
 } else {
-  // FALLBACK: LOAD PRIVATE KEY FROM FILE
   try {
     const keyPath = path.join(__dirname, '..', 'jaas_private.pk');
-    privateKey = fs.readFileSync(keyPath, 'utf8').trim();
-    console.log('[JaaS] Private key loaded from file.');
-
-    try {
-      privateKeyObject = crypto.createPrivateKey({ key: privateKey, format: 'pem' });
-      console.log('[JaaS] ✅ File private key parsed successfully. Type:', privateKeyObject.asymmetricKeyType);
-    } catch (error) {
-      console.error('[JaaS] ❌ File private key parsing FAILED:', error.message);
-      privateKeyObject = null;
-    }
+    const fileKey = fs.readFileSync(keyPath, 'utf8');
+    console.log('[JaaS] Loading private key from file...');
+    privateKeyObject = loadPrivateKey(fileKey);
   } catch (error) {
-    console.warn('[JaaS] ❌ Private key not found in Env or File.');
+    console.warn('[JaaS] ❌ Private key not found in env or file.');
   }
 }
 
@@ -91,10 +106,6 @@ if (process.env.JAAS_PRIVATE_KEY) {
 export const generateJaaSToken = (user, roomName, isModerator = false) => {
   const appId = process.env.JAAS_APP_ID;
   const kid = process.env.JAAS_API_KEY_ID;
-
-  console.log('[JaaS-DEBUG] generateJaaSToken | appId:', appId ? 'SET' : 'MISSING',
-    '| kid:', kid ? 'SET' : 'MISSING',
-    '| privateKeyObject:', privateKeyObject ? 'SET' : 'MISSING');
 
   if (!privateKeyObject || !appId || !kid) {
     throw new Error('JaaS configuration is incomplete. Missing valid private key, APP_ID, or API_KEY_ID.');
@@ -125,16 +136,11 @@ export const generateJaaSToken = (user, roomName, isModerator = false) => {
 
   const options = {
     algorithm: 'RS256',
-    header: { kid: kid, typ: 'JWT' },
+    header: { kid, typ: 'JWT' },
     expiresIn: '24h',
   };
 
-  try {
-    const token = jwt.sign(payload, privateKeyObject, options);
-    console.log('[JaaS-DEBUG] ✅ JWT generated successfully. Length:', token.length);
-    return token;
-  } catch (error) {
-    console.error('[JaaS-DEBUG] ❌ JWT signing FAILED:', error.message);
-    throw error;
-  }
+  const token = jwt.sign(payload, privateKeyObject, options);
+  console.log('[JaaS] ✅ JWT signed successfully. Length:', token.length);
+  return token;
 };
