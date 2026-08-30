@@ -417,6 +417,17 @@ export default function MeetingRoomScreen({ navigate, params }) {
 
   const runBeforeFirstLimit = `
     (function() {
+      // Inject CSS to hide Jitsi watermark, deep linking ads, promo banners
+      var style = document.createElement('style');
+      style.innerHTML = \`
+        .watermark { display: none !important; }
+        .deep-linking-mobile { display: none !important; }
+        .redirect-page { display: none !important; }
+        .thank-you { display: none !important; }
+        .promo { display: none !important; }
+      \`;
+      document.head.appendChild(style);
+
       var checkInterval = setInterval(function() {
         if (window.APP && window.APP.conference && typeof window.APP.conference.isJoined === 'function') {
           if (window.APP.conference.isJoined()) {
@@ -425,6 +436,24 @@ export default function MeetingRoomScreen({ navigate, params }) {
           }
         }
       }, 1000);
+
+      // Listen for conference left or page unload
+      window.addEventListener('pagehide', function() {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'hangup' }));
+      });
+      window.addEventListener('beforeunload', function() {
+        window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'hangup' }));
+      });
+
+      // Intercept hangup button clicks
+      document.addEventListener('click', function(e) {
+        var btn = e.target && e.target.closest && e.target.closest('[aria-label*="hangup" i], [aria-label*="Leave" i], [aria-label*="End meeting" i], [data-testid*="hangup" i], .hangup-button');
+        if (btn) {
+          setTimeout(function() {
+            window.ReactNativeWebView.postMessage(JSON.stringify({ type: 'hangup' }));
+          }, 300);
+        }
+      }, true);
     })();
     true;
   `;
@@ -443,15 +472,43 @@ export default function MeetingRoomScreen({ navigate, params }) {
           const res = await API.get(`/meetings/room/${roomName}`);
           setRoomData(res.data.meeting);
         }
+      } else if (data.type === 'hangup' || data.type === 'conference-left') {
+        const isHost = isSameId(roomData?.userId, getUserId(user));
+        if (isHost) {
+          setShowLeaveOptionsModal(true);
+        } else {
+          handleLeave();
+        }
       }
     } catch (err) {
       console.log('Error parsing WebView message:', err);
     }
   };
 
+  const isExitOrPromoUrl = (url) => {
+    if (!url) return false;
+    return (
+      url.includes('close.html') ||
+      url.includes('/close') ||
+      url.includes('static/close') ||
+      url.includes('thank-you') ||
+      url.includes('welcome') ||
+      url.includes('promo') ||
+      url.includes('jitsi.org') ||
+      (!url.includes(roomName) && !url.startsWith('about:') && !url.startsWith('blob:'))
+    );
+  };
+
   // Active meeting with full-screen Webview
   return (
     <View style={[styles.meetingContainer, { backgroundColor: colors.bg }]}>
+      {/* Top Left Floating Hi Logo */}
+      <View style={styles.topBarOverlay} pointerEvents="none">
+        <View style={styles.topLogoBadge}>
+          <Image source={hiLogo} style={styles.topLogoImg} resizeMode="contain" />
+        </View>
+      </View>
+
       {/* Timer overlay if Consultation */}
       {roomData?.isConsultation && consultationTime !== null && (
         <View style={[styles.timerOverlay, { backgroundColor: colors.bgCard, borderColor: colors.border }]}>
@@ -476,8 +533,7 @@ export default function MeetingRoomScreen({ navigate, params }) {
         injectedJavaScript={runBeforeFirstLimit}
         onMessage={onWebViewMessage}
         onNavigationStateChange={(navState) => {
-          const url = navState.url;
-          if (url.includes('close.html') || url.includes('/close') || url.includes('static/close')) {
+          if (isExitOrPromoUrl(navState.url)) {
             const isHost = isSameId(roomData?.userId, getUserId(user));
             if (isHost) {
               setShowLeaveOptionsModal(true);
@@ -487,8 +543,7 @@ export default function MeetingRoomScreen({ navigate, params }) {
           }
         }}
         onShouldStartLoadWithRequest={(request) => {
-          const url = request.url;
-          if (url.includes('close.html') || url.includes('/close') || url.includes('static/close')) {
+          if (isExitOrPromoUrl(request.url)) {
             const isHost = isSameId(roomData?.userId, getUserId(user));
             if (isHost) {
               setShowLeaveOptionsModal(true);
@@ -994,4 +1049,28 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '700',
   },
+  topBarOverlay: {
+    position: 'absolute',
+    top: 40,
+    left: 14,
+    zIndex: 9999,
+  },
+  topLogoBadge: {
+    backgroundColor: 'rgba(13, 12, 21, 0.85)',
+    paddingHorizontal: 10,
+    paddingVertical: 5,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(255, 255, 255, 0.15)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 5,
+  },
+  topLogoImg: {
+    height: 22,
+    width: 44,
+  },
 });
+
