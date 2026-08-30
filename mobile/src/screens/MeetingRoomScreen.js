@@ -322,14 +322,18 @@ export default function MeetingRoomScreen({ navigate, params }) {
   };
 
   const getJitsiSource = () => {
-    const isHost = roomData?.userId === user?.id;
-    const startAudioMuted = !userPreferences?.micDefault;
-    const startVideoMuted = !userPreferences?.cameraDefault;
+    const effectivePrefs = userPreferences || user?.preferences || {};
+    const isMicEnabled = effectivePrefs.micDefault === true;
+    const isCamEnabled = effectivePrefs.cameraDefault === true;
+    const startAudioMuted = !isMicEnabled;
+    const startVideoMuted = !isCamEnabled;
+
+    const resolvedDisplayName = effectivePrefs.displayName || user?.preferences?.displayName || user?.name || displayName || 'Guest';
     const logoUrl = 'https://video-conferencing-website-one.vercel.app/Hi_Logo.png';
     const brandLink = 'https://video-conferencing-website-one.vercel.app';
     const configString = `#config.startWithAudioMuted=${startAudioMuted}&config.startWithVideoMuted=${startVideoMuted}` +
       `&config.disableDeepLinking=true&config.enableClosePage=false&config.prejoinPageEnabled=true` +
-      `&config.prejoinConfig.enabled=true&userInfo.displayName=${encodeURIComponent(displayName)}` +
+      `&config.prejoinConfig.enabled=true&userInfo.displayName=${encodeURIComponent(resolvedDisplayName)}` +
       `&interfaceConfig.SHOW_JITSI_WATERMARK=false&interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false` +
       `&interfaceConfig.SHOW_POWERED_BY=false&interfaceConfig.SHOW_PROMOTIONAL_CLOSE_PAGE=false` +
       `&interfaceConfig.SHOW_BRAND_WATERMARK=true&interfaceConfig.DEFAULT_LOGO_URL=${encodeURIComponent(logoUrl)}` +
