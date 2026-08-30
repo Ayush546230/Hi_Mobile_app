@@ -10,12 +10,12 @@ const __dirname = path.dirname(__filename);
 let privateKey;
 if (process.env.JAAS_PRIVATE_KEY) {
   let raw = process.env.JAAS_PRIVATE_KEY;
-  
+
   // Strip surrounding quotes
   if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
     raw = raw.slice(1, -1);
   }
-  // Replace literal \n with real newlines
+  // Replace literal \n with real newlines (handles single-line format)
   raw = raw.replace(/\\n/g, '\n');
 
   // Extract ONLY the base64 content (strip PEM headers/footers and ALL whitespace)
@@ -27,25 +27,36 @@ if (process.env.JAAS_PRIVATE_KEY) {
   console.log('[JaaS-KEY] Base64 content length:', base64Content.length);
   console.log('[JaaS-KEY] First 40 base64 chars:', base64Content.substring(0, 40));
 
+  // Approach 1: Use as PEM directly (works when Render stores with real newlines)
   try {
-    // Decode base64 → DER binary buffer, then create key with explicit format hints
-    const derBuffer = Buffer.from(base64Content, 'base64');
-    const keyObject = crypto.createPrivateKey({ key: derBuffer, format: 'der', type: 'pkcs8' });
-    privateKey = keyObject.export({ type: 'pkcs8', format: 'pem' });
-    console.log('[JaaS] ✅ Private key loaded via DER decode. Lines:', privateKey.split('\n').length);
-  } catch (derErr) {
-    console.error('[JaaS] DER/PKCS8 failed:', derErr.message, '— trying PKCS1...');
+    const keyObj = crypto.createPrivateKey(raw);
+    privateKey = keyObj.export({ type: 'pkcs8', format: 'pem' });
+    console.log('[JaaS] ✅ Private key loaded directly as PEM.');
+  } catch (pemErr) {
+    console.warn('[JaaS] Direct PEM failed:', pemErr.message, '— trying DER/PKCS8...');
+
+    // Approach 2: Decode base64 as DER PKCS8
     try {
       const derBuffer = Buffer.from(base64Content, 'base64');
-      const keyObject = crypto.createPrivateKey({ key: derBuffer, format: 'der', type: 'pkcs1' });
+      const keyObject = crypto.createPrivateKey({ key: derBuffer, format: 'der', type: 'pkcs8' });
       privateKey = keyObject.export({ type: 'pkcs8', format: 'pem' });
-      console.log('[JaaS] ✅ Private key loaded via DER/PKCS1 decode.');
-    } catch (pkcs1Err) {
-      console.error('[JaaS] DER/PKCS1 also failed:', pkcs1Err.message);
-      // Last resort: reconstruct clean PEM manually and use as-is
-      const lines = base64Content.match(/.{1,64}/g) || [];
-      privateKey = '-----BEGIN PRIVATE KEY-----\n' + lines.join('\n') + '\n-----END PRIVATE KEY-----\n';
-      console.log('[JaaS] ⚠️ Using manually reconstructed PEM (last resort). Lines:', privateKey.split('\n').length);
+      console.log('[JaaS] ✅ Private key loaded via DER/PKCS8.');
+    } catch (derErr) {
+      console.warn('[JaaS] DER/PKCS8 failed:', derErr.message, '— trying PKCS1...');
+
+      // Approach 3: Decode base64 as DER PKCS1
+      try {
+        const derBuffer = Buffer.from(base64Content, 'base64');
+        const keyObject = crypto.createPrivateKey({ key: derBuffer, format: 'der', type: 'pkcs1' });
+        privateKey = keyObject.export({ type: 'pkcs8', format: 'pem' });
+        console.log('[JaaS] ✅ Private key loaded via DER/PKCS1.');
+      } catch (pkcs1Err) {
+        // Last resort: reconstruct PEM manually with REAL newlines
+        console.warn('[JaaS] DER/PKCS1 failed:', pkcs1Err.message, '— using last resort PEM rebuild.');
+        const lines = base64Content.match(/.{1,64}/g) || [];
+        privateKey = '-----BEGIN PRIVATE KEY-----\n' + lines.join('\n') + '\n-----END PRIVATE KEY-----\n';
+        console.log('[JaaS] ⚠️ Using manually reconstructed PEM (last resort). Length:', privateKey.length);
+      }
     }
   }
 } else {
