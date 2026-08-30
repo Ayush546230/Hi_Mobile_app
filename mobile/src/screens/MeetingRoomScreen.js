@@ -326,9 +326,14 @@ export default function MeetingRoomScreen({ navigate, params }) {
     const startAudioMuted = !userPreferences?.micDefault;
     const startVideoMuted = !userPreferences?.cameraDefault;
     const logoUrl = 'https://video-conferencing-website-one.vercel.app/Hi_Logo.png';
-    const configString = `#config.startWithAudioMuted=${startAudioMuted}&config.startWithVideoMuted=${startVideoMuted}&config.disableDeepLinking=true&config.prejoinPageEnabled=true&userInfo.displayName="${encodeURIComponent(displayName)}"` +
-      `&interfaceConfig.SHOW_JITSI_WATERMARK=false&interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false&interfaceConfig.SHOW_POWERED_BY=false` +
-      `&interfaceConfig.SHOW_BRAND_WATERMARK=true&interfaceConfig.DEFAULT_LOGO_URL="${encodeURIComponent(logoUrl)}"&interfaceConfig.BRAND_WATERMARK_LINK="${encodeURIComponent('https://video-conferencing-website-one.vercel.app')}"`;
+    const brandLink = 'https://video-conferencing-website-one.vercel.app';
+    const configString = `#config.startWithAudioMuted=${startAudioMuted}&config.startWithVideoMuted=${startVideoMuted}` +
+      `&config.disableDeepLinking=true&config.enableClosePage=false&config.prejoinPageEnabled=true` +
+      `&config.prejoinConfig.enabled=true&userInfo.displayName=${encodeURIComponent(displayName)}` +
+      `&interfaceConfig.SHOW_JITSI_WATERMARK=false&interfaceConfig.SHOW_WATERMARK_FOR_GUESTS=false` +
+      `&interfaceConfig.SHOW_POWERED_BY=false&interfaceConfig.SHOW_PROMOTIONAL_CLOSE_PAGE=false` +
+      `&interfaceConfig.SHOW_BRAND_WATERMARK=true&interfaceConfig.DEFAULT_LOGO_URL=${encodeURIComponent(logoUrl)}` +
+      `&interfaceConfig.BRAND_WATERMARK_LINK=${encodeURIComponent(brandLink)}`;
     
     if (jwtToken && roomData) {
       return { uri: `https://8x8.vc/${jaasAppId}/${roomName}?jwt=${jwtToken}${configString}` };
