@@ -7,84 +7,97 @@ import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-let privateKey;
+let privateKey = null;
+let privateKeyObject = null;
+
+// =====================================================
+// LOAD JAAS PRIVATE KEY
+// =====================================================
+
 if (process.env.JAAS_PRIVATE_KEY) {
   let raw = process.env.JAAS_PRIVATE_KEY;
 
-  console.log('[JaaS-ULTRA] === KEY LOADING START ===');
-  console.log('[JaaS-ULTRA] raw typeof:', typeof raw);
-  console.log('[JaaS-ULTRA] raw length:', raw.length);
-  console.log('[JaaS-ULTRA] raw first 60 chars (hex):', Buffer.from(raw.substring(0, 60)).toString('hex'));
-  console.log('[JaaS-ULTRA] raw first 60 chars (text):', raw.substring(0, 60).replace(/\n/g, '[NL]').replace(/\r/g, '[CR]'));
-  console.log('[JaaS-ULTRA] Has real newline (\\n char):', raw.indexOf('\n') !== -1);
-  console.log('[JaaS-ULTRA] Has literal backslash-n:', raw.indexOf('\\n') !== -1);
-  console.log('[JaaS-ULTRA] Starts with quote:', raw.startsWith('"') || raw.startsWith("'"));
-  console.log('[JaaS-ULTRA] Has BEGIN header:', raw.includes('BEGIN PRIVATE KEY'));
-  console.log('[JaaS-ULTRA] Has BEGIN RSA header:', raw.includes('BEGIN RSA PRIVATE KEY'));
+  console.log('[JaaS] ===== PRIVATE KEY LOADING =====');
 
-  // Strip surrounding quotes
-  if ((raw.startsWith('"') && raw.endsWith('"')) || (raw.startsWith("'") && raw.endsWith("'"))) {
+  // Remove surrounding quotes if Render/env has them
+  if (
+    (raw.startsWith('"') && raw.endsWith('"')) ||
+    (raw.startsWith("'") && raw.endsWith("'"))
+  ) {
     raw = raw.slice(1, -1);
-    console.log('[JaaS-ULTRA] Stripped quotes. New length:', raw.length);
   }
 
-  // Handle both storage formats
-  if (raw.indexOf('\n') === -1) {
-    console.log('[JaaS-ULTRA] No real newlines — converting literal \\n to real newlines');
-    raw = raw.split('\\n').join('\n');
-    console.log('[JaaS-ULTRA] After conversion length:', raw.length);
-  } else {
-    console.log('[JaaS-ULTRA] Real newlines found — no conversion needed');
+  // Convert literal \n into real newlines
+  if (raw.includes('\\n')) {
+    raw = raw.replace(/\\n/g, '\n');
   }
 
-  console.log('[JaaS-ULTRA] Final PEM first line:', raw.split('\n')[0]);
-  console.log('[JaaS-ULTRA] Final PEM last line:', raw.split('\n').slice(-1)[0]);
-  console.log('[JaaS-ULTRA] Final PEM total lines:', raw.split('\n').length);
-  console.log('[JaaS-ULTRA] Final PEM has BEGIN:', raw.includes('-----BEGIN PRIVATE KEY-----'));
-  console.log('[JaaS-ULTRA] Final PEM has END:', raw.includes('-----END PRIVATE KEY-----'));
+  // Remove accidental CR characters
+  raw = raw.replace(/\r/g, '');
 
-  // Try parsing to validate key
+  privateKey = raw.trim();
+
+  console.log('[JaaS] Key length:', privateKey.length);
+  console.log('[JaaS] Has BEGIN PRIVATE KEY:', privateKey.includes('-----BEGIN PRIVATE KEY-----'));
+  console.log('[JaaS] Has END PRIVATE KEY:', privateKey.includes('-----END PRIVATE KEY-----'));
+  console.log('[JaaS] Has real newline:', privateKey.includes('\n'));
+  console.log('[JaaS] First 60 chars:', privateKey.substring(0, 60).replace(/\n/g, '[NL]'));
+
+  // IMPORTANT: Convert PEM string into Node.js asymmetric KeyObject
   try {
-    const testKey = crypto.createPrivateKey(raw);
-    console.log('[JaaS-ULTRA] ✅ crypto.createPrivateKey SUCCEEDED. keyType:', testKey.asymmetricKeyType);
-    privateKey = raw;
-  } catch (e) {
-    console.error('[JaaS-ULTRA] ❌ crypto.createPrivateKey FAILED:', e.message);
-    console.log('[JaaS-ULTRA] Full raw value (first 200 chars):', raw.substring(0, 200).replace(/\n/g, '[NL]'));
-    // Still try using it directly
-    privateKey = raw;
-  }
+    privateKeyObject = crypto.createPrivateKey({
+      key: privateKey,
+      format: 'pem',
+    });
 
-  console.log('[JaaS-ULTRA] === KEY LOADING DONE ===');
-} else {
-  console.warn('[JaaS-ULTRA] JAAS_PRIVATE_KEY env var NOT SET — trying file');
-  try {
-    privateKey = fs.readFileSync(path.join(__dirname, '..', 'jaas_private.pk'), 'utf8');
-    console.log('[JaaS-ULTRA] Key loaded from file. Length:', privateKey.length);
+    console.log('[JaaS] ✅ Private key parsed successfully');
+    console.log('[JaaS] Key type:', privateKeyObject.asymmetricKeyType);
+
+    if (privateKeyObject.asymmetricKeyType !== 'rsa') {
+      throw new Error(`Expected RSA private key, got ${privateKeyObject.asymmetricKeyType}`);
+    }
+
+    console.log('[JaaS] ✅ RSA private key confirmed');
   } catch (error) {
-    console.warn('[JaaS-ULTRA] Key file not found either. JWT generation will fail.');
+    console.error('[JaaS] ❌ Private key parsing FAILED:', error.message);
+    privateKeyObject = null;
+  }
+
+  console.log('[JaaS] ===== PRIVATE KEY LOADING DONE =====');
+
+} else {
+  // FALLBACK: LOAD PRIVATE KEY FROM FILE
+  try {
+    const keyPath = path.join(__dirname, '..', 'jaas_private.pk');
+    privateKey = fs.readFileSync(keyPath, 'utf8').trim();
+    console.log('[JaaS] Private key loaded from file.');
+
+    try {
+      privateKeyObject = crypto.createPrivateKey({ key: privateKey, format: 'pem' });
+      console.log('[JaaS] ✅ File private key parsed successfully. Type:', privateKeyObject.asymmetricKeyType);
+    } catch (error) {
+      console.error('[JaaS] ❌ File private key parsing FAILED:', error.message);
+      privateKeyObject = null;
+    }
+  } catch (error) {
+    console.warn('[JaaS] ❌ Private key not found in Env or File.');
   }
 }
 
-/**
- * Generate a JWT token for JaaS (Jitsi as a Service)
- */
+// =====================================================
+// GENERATE JAAS JWT
+// =====================================================
+
 export const generateJaaSToken = (user, roomName, isModerator = false) => {
   const appId = process.env.JAAS_APP_ID;
   const kid = process.env.JAAS_API_KEY_ID;
 
-  console.log('[JaaS-ULTRA] generateJaaSToken called. appId:', appId ? 'SET' : 'MISSING', '| kid:', kid ? 'SET' : 'MISSING', '| privateKey:', privateKey ? `SET (len=${typeof privateKey === 'string' ? privateKey.length : 'obj'})` : 'MISSING');
+  console.log('[JaaS-DEBUG] generateJaaSToken | appId:', appId ? 'SET' : 'MISSING',
+    '| kid:', kid ? 'SET' : 'MISSING',
+    '| privateKeyObject:', privateKeyObject ? 'SET' : 'MISSING');
 
-  if (!privateKey || !appId || !kid) {
-    throw new Error('JaaS configuration is incomplete. Missing private key, APP_ID, or API_KEY_ID.');
-  }
-
-  // Log key details at sign time
-  if (typeof privateKey === 'string') {
-    console.log('[JaaS-ULTRA] privateKey at sign: len=', privateKey.length,
-      '| starts=', privateKey.substring(0, 27),
-      '| hasNewline=', privateKey.includes('\n'),
-      '| hasBEGIN=', privateKey.includes('BEGIN'));
+  if (!privateKeyObject || !appId || !kid) {
+    throw new Error('JaaS configuration is incomplete. Missing valid private key, APP_ID, or API_KEY_ID.');
   }
 
   const payload = {
@@ -94,10 +107,10 @@ export const generateJaaSToken = (user, roomName, isModerator = false) => {
     room: '*',
     context: {
       user: {
-        id: user._id ? user._id.toString() : 'guest',
-        name: user.name || user.email || 'Guest',
-        email: user.email || '',
-        avatar: (user.avatar && user.avatar.length < 500) ? user.avatar : '',
+        id: user?._id ? user._id.toString() : 'guest',
+        name: user?.name || user?.email || 'Guest',
+        email: user?.email || '',
+        avatar: (user?.avatar && user.avatar.length < 500) ? user.avatar : '',
         moderator: isModerator,
       },
       features: {
@@ -112,12 +125,16 @@ export const generateJaaSToken = (user, roomName, isModerator = false) => {
 
   const options = {
     algorithm: 'RS256',
-    header: {
-      kid: kid,
-      typ: 'JWT',
-    },
+    header: { kid: kid, typ: 'JWT' },
     expiresIn: '24h',
   };
 
-  return jwt.sign(payload, privateKey, options);
+  try {
+    const token = jwt.sign(payload, privateKeyObject, options);
+    console.log('[JaaS-DEBUG] ✅ JWT generated successfully. Length:', token.length);
+    return token;
+  } catch (error) {
+    console.error('[JaaS-DEBUG] ❌ JWT signing FAILED:', error.message);
+    throw error;
+  }
 };
